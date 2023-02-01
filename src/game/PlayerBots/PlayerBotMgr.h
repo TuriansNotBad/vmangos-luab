@@ -9,6 +9,8 @@
 #include <vector>
 #include <memory>
 
+#include "lua.hpp"
+
 class PlayerBotAI;
 class WorldSession;
 class Player;
@@ -69,9 +71,23 @@ struct PlayerBotStats
 
 class PlayerBotMgr
 {
+
+    lua_State* L;
+    bool m_luaReload;
+    bool m_luaCease;
+    int m_luaUpdateInterval;
+    int m_luaUpdateLast;
+
     public:
         PlayerBotMgr();
         ~PlayerBotMgr();
+
+        lua_State* Lua() { return L; }
+        bool LuaDofile(const std::string& filename);
+        void LuaReload() { m_luaReload = true; }
+        void LuaReloadFiles();
+        void LuaReloadInternal();
+        void ReviveAll(Player* pMaster);
 
         void LoadConfig();
         void Load();

@@ -1634,12 +1634,12 @@ class Player final: public Unit
         }
         void _ApplyAllStatBonuses();
         void _RemoveAllStatBonuses();
-        void _ApplyItemMods(Item* item, uint8 slot, bool apply);
         void _RemoveAllItemMods();
         void _ApplyAllItemMods();
         void _ApplyItemBonuses(ItemPrototype const* proto, uint8 slot, bool apply);
         void _ApplyAmmoBonuses();
     public:
+        void _ApplyItemMods(Item* item, uint8 slot, bool apply);
         void SetPersonalXpRate(float rate) { if (rate >= 0) m_personalXpRate = rate; }
         float GetPersonalXpRate() const { return m_personalXpRate; }
         void GiveXP(uint32 xp, Unit* victim);

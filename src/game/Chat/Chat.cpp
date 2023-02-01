@@ -83,6 +83,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "add",        SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotAddCommand,              "", nullptr },
         { "add_all",    SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotAddAllCommand,           "", nullptr },
         { "delete",     SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotDeleteCommand,           "", nullptr },
+        { "deleteall",  SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotDeleteAllCommand,        "", nullptr },
         { "info",       SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotInfoCommand,             "", nullptr },
         { "reload",     SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotReloadCommand,           "", nullptr },
         { "stop",       SEC_ADMINISTRATOR,      true,  &ChatHandler::HandleBotStopCommand,             "", nullptr },
@@ -93,7 +94,10 @@ ChatCommand * ChatHandler::getCommandTable()
 
     static ChatCommand partyBotCommandTable[] =
     {
+        { "inviteme",   SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotInviteMeCommand,    "", nullptr },
+        { "myrole",     SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotMyroleCommand,      "", nullptr },
         { "add",        SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotAddCommand,         "", nullptr },
+        { "addluab",    SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotAddLuaBCommand,     "", nullptr },
         { "clone",      SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotCloneCommand,       "", nullptr },
         { "load",       SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotLoadCommand,        "", nullptr },
         { "setrole",    SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotSetRoleCommand,     "", nullptr },
@@ -109,6 +113,8 @@ ChatCommand * ChatHandler::getCommandTable()
         { "unpause",    SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotUnpauseCommand,     "", nullptr },
         { "unequip",    SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotUnequipCommand,     "", nullptr },
         { "remove",     SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotRemoveCommand,      "", nullptr },
+        { "reloadlua",  SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotReloadLua,          "", nullptr },
+        { "reviveall",  SEC_ADMINISTRATOR,      false, &ChatHandler::HandlePartyBotReviveAll,          "", nullptr },
         { nullptr,      0,                      false, nullptr,                                        "", nullptr },
     };
     static ChatCommand battleBotAddCommandTable[] =

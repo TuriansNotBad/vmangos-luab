@@ -45,6 +45,7 @@ class PlayerBotAI: public PlayerAI
         virtual void BeforeAddToMap(Player* player) {} // me=nullptr at call
         // Helpers
         bool SpawnNewPlayer(WorldSession* sess, uint8 classId, uint32 raceId, uint32 mapId, uint32 instanceId, float dx, float dy, float dz, float o, Player* pClone = nullptr);
+        bool SpawnNewPlayer(WorldSession* sess, uint8 classId, uint32 raceId, uint8 genderId, uint32 mapId, uint32 instanceId, float dx, float dy, float dz, float o, Player* pClone = nullptr);
         PlayerBotEntry* botEntry;
 };
 

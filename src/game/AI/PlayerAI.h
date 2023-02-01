@@ -44,6 +44,8 @@ class PlayerAI
         ///== Helpers =====================================
         bool CanCastSpell(Unit* pTarget, SpellEntry const* pSpell, bool isTriggered, bool checkControlled = true);
 
+        virtual bool IsLuaBot() { return false; }
+
         ///== Fields =======================================
 
         // Pointer to controlled by AI player

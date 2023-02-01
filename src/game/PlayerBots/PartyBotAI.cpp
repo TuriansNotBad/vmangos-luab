@@ -51,7 +51,10 @@ bool PartyBotAI::OnSessionLoaded(PlayerBotEntry* entry, WorldSession* sess)
         return true;
     }
 
-    return SpawnNewPlayer(sess, m_class, m_race, m_mapId, m_instanceId, m_x, m_y, m_z, m_o, sObjectAccessor.FindPlayer(m_cloneGuid));
+    if (m_gender >= 0)
+        return SpawnNewPlayer(sess, m_class, m_race, m_gender, m_mapId, m_instanceId, m_x, m_y, m_z, m_o, sObjectAccessor.FindPlayer(m_cloneGuid));
+    else
+        return SpawnNewPlayer(sess, m_class, m_race, m_mapId, m_instanceId, m_x, m_y, m_z, m_o, sObjectAccessor.FindPlayer(m_cloneGuid));
 }
 
 void PartyBotAI::CloneFromPlayer(Player const* pPlayer)
@@ -155,8 +158,8 @@ bool PartyBotAI::DrinkAndEat()
     if (me->GetVictim())
         return false;
 
-    bool const needToEat = me->GetHealthPercent() < 100.0f;
-    bool const needToDrink = (me->GetPowerType() == POWER_MANA) && (me->GetPowerPercent(POWER_MANA) < 100.0f);
+    bool const needToEat = me->GetHealthPercent() < 70.0f;
+    bool const needToDrink = (me->GetPowerType() == POWER_MANA) && (me->GetPowerPercent(POWER_MANA) < 70.0f);
 
     if (!needToEat && !needToDrink)
         return false;
@@ -591,7 +594,40 @@ void PartyBotAI::UpdateAI(uint32 const diff)
         m_resetSpellData = false;
     }
 
+    // dont get xp
+    me->SetUInt32Value(PLAYER_XP, 0);
     Player* pLeader = GetPartyLeader();
+
+    // level ups
+    if (pLeader) {
+        if (me->GetLevel() < pLeader->GetLevel() && !me->IsInCombat()) {
+            me->GiveLevel(pLeader->GetLevel());
+            me->InitTalentForLevel();
+            LearnPremadeSpecForClass();
+            // destroy all gear
+            for (int slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
+                if (me->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
+                    me->DestroyItem(INVENTORY_SLOT_BAG_0, slot, true);
+            AutoEquipGear(sWorld.getConfig(CONFIG_UINT32_PARTY_BOT_AUTO_EQUIP));
+            me->UpdateSkillsToMaxSkillsForLevel();
+
+            // fix client bug causing some item slots to not be visible
+            if (Player* pLeader = GetPartyLeader())
+            {
+                me->SetVisibility(VISIBILITY_OFF);
+                pLeader->UpdateVisibilityOf(pLeader, me);
+                me->SetVisibility(VISIBILITY_ON);
+            }
+            ResetSpellData();
+            PopulateSpellData();
+            AddAllSpellReagents();
+            SummonPetIfNeeded();
+            me->SetHealthPercent(100.0f);
+            me->SetPowerPercent(me->GetPowerType(), 100.0f);
+        }
+    }
+
+
     if (!pLeader)
     {
         botEntry->requestRemoval = true;
@@ -785,8 +821,15 @@ void PartyBotAI::UpdateAI(uint32 const diff)
     {
         if (!pVictim)
         {
-            if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE)
-                me->GetMotionMaster()->MoveFollow(pLeader, urand(PB_MIN_FOLLOW_DIST, PB_MAX_FOLLOW_DIST), frand(PB_MIN_FOLLOW_ANGLE, PB_MAX_FOLLOW_ANGLE));
+            if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() != FOLLOW_MOTION_TYPE) {
+                float followangle;
+                if (m_role != ROLE_TANK)
+                    followangle = frand(2.1, 3.83);
+                else
+                    followangle = 0.0f;
+                me->GetMotionMaster()->MoveFollow(pLeader, urand(4, PB_MAX_FOLLOW_DIST), followangle);
+                //me->GetMotionMaster()->MoveFollow(pLeader, urand(PB_MIN_FOLLOW_DIST, PB_MAX_FOLLOW_DIST), frand(PB_MIN_FOLLOW_ANGLE, PB_MAX_FOLLOW_ANGLE));
+            }
         }
         else
         {

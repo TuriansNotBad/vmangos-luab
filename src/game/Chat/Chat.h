@@ -86,10 +86,12 @@ enum PlayerChatTag
 
 class PartyBotAI;
 class BattleBotAI;
+class LuaBotAI;
 
 class ChatHandler
 {
     friend class PartyBotAI;
+    friend class LuaBotAI;
     friend class BattleBotAI;
     public:
         explicit ChatHandler(WorldSession* session);
@@ -250,12 +252,16 @@ class ChatHandler
         bool HandleBotAddRandomCommand(char *args);
         bool HandleBotAddCommand(char * args);
         bool HandleBotDeleteCommand(char * args);
+        bool HandleBotDeleteAllCommand( char* args );
         bool HandleBotInfoCommand(char * args);
         bool HandleBotReloadCommand(char * args);
         bool HandleBotStopCommand(char * args);
         bool HandleBotStartCommand(char * args);
         bool PartyBotAddRequirementCheck(Player const* pPlayer, Player const* pTarget);
-        bool HandlePartyBotAddCommand(char * args);
+        bool HandlePartyBotMyroleCommand(char* args);
+        bool HandlePartyBotInviteMeCommand(char* args);
+        bool HandlePartyBotAddCommand(char* args);
+        bool HandlePartyBotAddLuaBCommand(char* args);
         bool HandlePartyBotCloneCommand(char * args);
         bool HandlePartyBotLoadCommand(char * args);
         bool HandlePartyBotSetRoleCommand(char * args);
@@ -271,6 +277,8 @@ class ChatHandler
         bool HandlePartyBotUnpauseCommand(char * args);
         bool HandlePartyBotUnequipCommand(char * args);
         bool HandlePartyBotRemoveCommand(char * args);
+        bool HandlePartyBotReloadLua(char * args);
+        bool HandlePartyBotReviveAll(char * args);
         bool HandleBattleBotAddCommand(char* args, uint8 bg);
         bool HandleBattleBotAddAlteracCommand(char* args);
         bool HandleBattleBotAddArathiCommand(char* args);

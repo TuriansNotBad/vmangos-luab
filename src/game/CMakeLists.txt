@@ -193,6 +193,19 @@ set (game_SRCS
     PlayerBots/BattleBotWaypoints.cpp
     PlayerBots/PlayerBotAI.cpp
     PlayerBots/PlayerBotMgr.cpp
+    PlayerBots/LuaBot/Goal.cpp
+    PlayerBots/LuaBot/GoalManager.cpp
+    PlayerBots/LuaBot/GoalParam.cpp
+    PlayerBots/LuaBot/LogicManager.cpp
+    PlayerBots/LuaBot/LuaBindsBotCommon.cpp
+    PlayerBots/LuaBot/LuaBotAI.cpp
+    PlayerBots/LuaBot/LuaLibAI.cpp
+    PlayerBots/LuaBot/LuaLibAux.cpp
+    PlayerBots/LuaBot/LuaLibPlayer.cpp
+    PlayerBots/LuaBot/LuaLibUnit.cpp
+    PlayerBots/LuaBot/LuaLibWorldObj.cpp
+    PlayerBots/LuaBot/LuaUtils.cpp
+	Movement/BotMovementGenerator.cpp
     Protocol/Opcodes.cpp
     Protocol/WorldSocket.cpp
     Protocol/WorldSocketMgr.cpp
@@ -385,6 +398,19 @@ set (game_SRCS
     PlayerBots/BattleBotWaypoints.h
     PlayerBots/PlayerBotAI.h
     PlayerBots/PlayerBotMgr.h
+    PlayerBots/LuaBot/Goal.h
+    PlayerBots/LuaBot/GoalManager.h
+    PlayerBots/LuaBot/GoalParam.h
+    PlayerBots/LuaBot/LogicManager.h
+    PlayerBots/LuaBot/LuaBindsBotCommon.h
+    PlayerBots/LuaBot/LuaBotAI.h
+    PlayerBots/LuaBot/LuaLibAI.h
+    PlayerBots/LuaBot/LuaLibAux.h
+    PlayerBots/LuaBot/LuaLibPlayer.h
+    PlayerBots/LuaBot/LuaLibUnit.h
+    PlayerBots/LuaBot/LuaLibWorldObj.h
+    PlayerBots/LuaBot/LuaUtils.h
+	Movement/BotMovementGenerator.h
     Protocol/Opcodes.h
     Protocol/WorldSocket.h
     Protocol/WorldSocketMgr.h
@@ -493,6 +519,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
   ${CMAKE_CURRENT_SOURCE_DIR}/PacketBroadcast
   ${CMAKE_CURRENT_SOURCE_DIR}/PlayerBots
+  ${CMAKE_CURRENT_SOURCE_DIR}/PlayerBots/LuaBot
   ${CMAKE_CURRENT_SOURCE_DIR}/Protocol
   ${CMAKE_CURRENT_SOURCE_DIR}/Spells
   ${CMAKE_CURRENT_SOURCE_DIR}/Threat
@@ -558,16 +585,35 @@ source_group("Anticheat"
   REGULAR_EXPRESSION Anticheat
 )
 
+source_group("LuaBot"
+  REGULAR_EXPRESSION Lua
+)
+
+source_group("LuaBot/Goal"
+  REGULAR_EXPRESSION Goal|LogicManager
+)
+
 add_library(game STATIC
   ${game_SRCS}
 )
 
 SET_TARGET_PROPERTIES (game PROPERTIES FOLDER "Game Libs")
 
+# luas
+add_compile_definitions(_SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING)
+get_filename_component(LUADIR ${CMAKE_SOURCE_DIR}/../lua ABSOLUTE)
+target_link_libraries(game PUBLIC ${LUADIR}/lib/lua.lib)
+target_include_directories(game
+  PRIVATE
+    ${LUADIR}/src)
+#luas
+
 target_link_libraries(game
-  shared
-  Detour
+  PRIVATE shared
+  PRIVATE Detour
 )
+
+
 
 #add_dependencies(game revision.h)
 

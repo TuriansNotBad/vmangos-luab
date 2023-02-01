@@ -101,6 +101,15 @@ add_executable(${EXECUTABLE_NAME}
   ${EXECUTABLE_SRCS}
 )
 
+# luas
+get_filename_component(LUADIR ${CMAKE_SOURCE_DIR}/../lua ABSOLUTE)
+target_link_libraries(${EXECUTABLE_NAME} ${LUADIR}/lib/lua.lib)
+target_include_directories(${EXECUTABLE_NAME}
+	PRIVATE
+		${LUADIR}/src)
+#luas
+
+
 if(USE_SCRIPTS)
   target_link_libraries(${EXECUTABLE_NAME}
     game

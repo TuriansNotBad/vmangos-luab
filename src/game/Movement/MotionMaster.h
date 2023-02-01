@@ -123,6 +123,9 @@ class MotionMaster : std::stack<MovementGenerator *>
         }
         void ClearType(MovementGeneratorType moveType);
 
+        void MoveBotFollow(Unit* target, float dist, float angle);
+        void MoveBotChase(Unit* target, float dist = 0.0f, float angle = 0.0f, float angleT = 15.0f);
+        void MoveBotPoint(uint32 id, float x, float y, float z, uint32 options = MOVE_NONE, float speed = 0.0f, float finalOrientation = -10);
         void MoveIdle();
         void MoveRandom(bool use_current_position = false, float wander_distance = 0.0f, uint32 expire_time = 0);
         void MoveTargetedHome();

@@ -40,6 +40,15 @@ public:
         m_cloneGuid = pClone ? pClone->GetObjectGuid() : ObjectGuid();
         m_updateTimer.Reset(2000);
     }
+    PartyBotAI(Player* pLeader, Player* pClone, CombatBotRoles role, uint8 race, uint8 class_, uint8 gender, uint8 level, uint32 mapId, uint32 instanceId, float x, float y, float z, float o)
+        : CombatBotBaseAI(), m_race(race), m_class(class_), m_level(level), m_mapId(mapId), m_instanceId(instanceId), m_x(x), m_y(y), m_z(z), m_o(o)
+    {
+        m_gender = gender;
+        m_role = role;
+        m_leaderGuid = pLeader->GetObjectGuid();
+        m_cloneGuid = pClone ? pClone->GetObjectGuid() : ObjectGuid();
+        m_updateTimer.Reset(2000);
+    }
     PartyBotAI(Player* pLeader, uint32 mapId, uint32 instanceId, float x, float y, float z, float o)
         : CombatBotBaseAI(), m_mapId(mapId), m_instanceId(instanceId), m_x(x), m_y(y), m_z(z), m_o(o)
     {
@@ -50,7 +59,7 @@ public:
 
     bool OnSessionLoaded(PlayerBotEntry* entry, WorldSession* sess) final;
     void OnPlayerLogin() final;
-    void UpdateAI(uint32 const diff) final;
+    void UpdateAI(uint32 const diff);
     void OnPacketReceived(WorldPacket const* packet) final;
     void SendFakePacket(uint16 opcode) final;
 
@@ -101,6 +110,7 @@ public:
     ShortTimeTracker m_updateTimer;
     ObjectGuid m_leaderGuid;
     ObjectGuid m_cloneGuid;
+    int m_gender = -1;
     uint8 m_race = 0;
     uint8 m_class = 0;
     uint8 m_level = 0;

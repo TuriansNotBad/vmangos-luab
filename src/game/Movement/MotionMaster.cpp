@@ -916,3 +916,59 @@ void Creature::PauseOutOfCombatMovement(uint32 pauseTime)
         }
     }
 }
+
+// BOTS
+#include "BotMovementGenerator.h"
+
+void MotionMaster::MoveBotChase(Unit* target, float dist, float angle, float angleT)
+{
+    // ignore movement request if target not exist
+    if (!target)
+        return;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s chase to %s", m_owner->GetGuidStr().c_str(), target->GetGuidStr().c_str());
+
+    if (m_owner->IsPlayer())
+        Mutate(new BotChaseMovementGenerator<Player>(*target, dist, angle, angleT));
+    else
+    {
+        // interrupt current movespline
+        if (!m_owner->IsStopped())
+            m_owner->StopMoving();
+
+        Mutate(new BotChaseMovementGenerator<Creature>(*target, dist, angle, angleT));
+    }
+}
+
+void MotionMaster::MoveBotFollow(Unit* target, float dist, float angle)
+{
+    if (m_owner->HasUnitState(UNIT_STAT_LOST_CONTROL))
+        return;
+
+    Clear();
+
+    // ignore movement request if target not exist
+    if (!target)
+        return;
+
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s follow to %s", m_owner->GetGuidStr().c_str(), target->GetGuidStr().c_str());
+
+    if (m_owner->IsPlayer())
+        Mutate(new BotFollowMovementGenerator<Player>(*target, dist, angle));
+    else
+        Mutate(new BotFollowMovementGenerator<Creature>(*target, dist, angle));
+}
+
+void MotionMaster::MoveBotPoint(uint32 id, float x, float y, float z, uint32 options, float speed, float finalOrientation)
+{
+    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "%s targeted point (Id: %u X: %f Y: %f Z: %f)", m_owner->GetGuidStr().c_str(), id, x, y, z);
+
+    if (m_owner->IsPlayer())
+        Mutate(new BotPointMovementGenerator<Player>(id, x, y, z, options, speed, finalOrientation));
+    else
+        Mutate(new BotPointMovementGenerator<Creature>(id, x, y, z, options, speed, finalOrientation));
+}
+
+
+
+

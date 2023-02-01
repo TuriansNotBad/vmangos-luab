@@ -818,6 +818,7 @@ class Unit : public SpellCaster
         }
 
         bool HasAuraType(AuraType auraType) const;
+        bool HasAuraByCaster(AuraType auraType, uint32 spellId, ObjectGuid casterGuid) const;
         bool HasAuraTypeByCaster(AuraType auraType, ObjectGuid casterGuid) const;
         bool HasAura(uint32 spellId, SpellEffectIndex effIndex) const;
         bool HasAura(uint32 spellId) const { return m_spellAuraHolders.find(spellId) != m_spellAuraHolders.end(); }
