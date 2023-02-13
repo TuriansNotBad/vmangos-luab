@@ -183,6 +183,7 @@ class ChatHandler
         bool HandleAnticheatCommand(char*);
         bool HandleReloadAnticheatCommand(char*);
         bool HandleViewLogCommand(char*);
+        bool HandleSniffCommand(char*);
 
         //Cheats
         bool HandleCheatStatusCommand(char *);
@@ -205,7 +206,6 @@ class ChatHandler
         //Custom
         bool HandleSendSpellVisualCommand(char *);
         bool HandleSendSpellImpactCommand(char *);
-        bool HandleDebugUnitCommand(char *);
         bool HandleDebugTimeCommand(char *);
         bool HandleDebugMoveFlagsCommand(char *);
         bool HandleDebugMoveSplineCommand(char *);

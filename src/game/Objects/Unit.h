@@ -314,9 +314,6 @@ struct ProhibitSpellInfo
     uint32 RestingMsTime;
 };
 
-#define DEBUG_UNIT(unit, flags, ...) do { if (unit->GetDebugFlags() & flags) unit->Debug(flags, __VA_ARGS__); } while (false)
-#define DEBUG_UNIT_IF(cond, unit, flags, ...) do { if (unit->GetDebugFlags() & flags && cond) unit->Debug(flags, __VA_ARGS__); } while (false)
-
 struct ProcTriggeredData
 {
     ProcTriggeredData(SpellProcEventEntry const* _spellProcEvent, SpellAuraHolder* _triggeredByHolder, Unit* _target, uint32 _procFlag)
@@ -598,18 +595,6 @@ class Unit : public SpellCaster
         void HandleEmote(uint32 emote_id);                  // auto-select command/state
         void HandleEmoteCommand(uint32 emote_id);
         void HandleEmoteState(uint32 emote_id);
-                                                                               // debug.
-        void Debug(uint32 debugType, char const* str, ...) const ATTR_PRINTF(3, 4);
-        void SetDebugger(ObjectGuid playerGuid, uint32 flags)
-        {
-            m_debuggerGuid = playerGuid;
-            m_debugFlags = flags;
-        }
-        uint32 GetDebugFlags() const { return m_debugFlags; }
-        ObjectGuid GetDebuggerGuid() const { return m_debuggerGuid; }
-    protected:
-        mutable ObjectGuid m_debuggerGuid;
-        mutable uint32 m_debugFlags;
 
         /*********************************************************/
         /***                VISIBILITY SYSTEM                  ***/
@@ -855,7 +840,7 @@ class Unit : public SpellCaster
         bool IsSpellCrit(Unit const* pVictim, SpellEntry const* spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType = BASE_ATTACK, Spell* spell = nullptr) const final;
         bool IsEffectResist(SpellEntry const* spell, int eff) const; // SPELL_AURA_MOD_MECHANIC_RESISTANCE
         
-        void ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, SpellEntry const* procSpell, uint32 damage, ProcTriggeredList& triggeredList, std::list<SpellModifier*> const& appliedSpellModifiers, bool isSpellTriggeredByAuraOrItem);
+        void ProcDamageAndSpellFor(bool isVictim, Unit* pTarget, ProcSystemArguments const& data, ProcTriggeredList& triggeredList);
         void ProcSkillsAndReactives(bool isVictim, Unit* pTarget, uint32 procFlag, uint32 procExtra, WeaponAttackType attType);
         void HandleTriggers(Unit* pVictim, uint32 procExtra, uint32 amount, SpellEntry const* procSpell, ProcTriggeredList const& procTriggered);
 
