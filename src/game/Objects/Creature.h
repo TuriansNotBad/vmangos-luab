@@ -114,6 +114,7 @@ class Creature : public Unit
         bool HasStaticDBSpawnData() const;                  // listed in `creature` table and have fixed in DB guid
         uint32 GetDBTableGUIDLow() const;
 
+        virtual char const* GetName() const override { return GetCreatureInfo()->name; }
         char const* GetSubName() const { return GetCreatureInfo()->subname; }
 
         void Update(uint32 update_diff, uint32 time) override;  // overwrite Unit::Update
@@ -340,7 +341,7 @@ class Creature : public Unit
         bool IsVisibleInGridForPlayer(Player const* pl) const override;
 
         void RemoveCorpse();
-        bool IsDeadByDefault() const;
+        bool IsDeadByDefault() const { return m_isDeadByDefault; }
 
         void ForcedDespawn(uint32 msTimeToDespawn = 0, uint32 secsTimeToRespawn = 0);
         void DespawnOrUnsummon(uint32 msTimeToDespawn = 0, uint32 secsTimeToRespawn = 0);
@@ -607,6 +608,7 @@ class Creature : public Unit
         uint32 m_equipmentId;
         uint32 m_mountId;                                   // display Id to mount
 
+        bool m_isDeadByDefault;
         bool m_AI_locked;
         uint16 m_creatureStateFlags;
         uint32 m_temporaryFactionFlags;                     // used for real faction changes (not auras etc)
@@ -636,6 +638,7 @@ class Creature : public Unit
         uint32 m_playerDamageTaken;
         uint32 m_nonPlayerDamageTaken;
         
+        uint32 m_callForHelpTimer;
         float m_callForHelpDist;
         float m_leashDistance;
         float m_detectionDistance;

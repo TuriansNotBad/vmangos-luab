@@ -248,8 +248,6 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, float x, float
         SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN));
     }
 
-    SetName(goinfo->name);
-
     if (GetGOInfo()->IsLargeGameObject())
     {
         SetVisibilityModifier(VISIBILITY_DISTANCE_LARGE);
@@ -379,6 +377,22 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
                         m_lootState = GO_READY;             // can be successfully open with some chance
                     }
                     return;
+                }
+                case GAMEOBJECT_TYPE_CHEST:
+                {
+                    if (m_goInfo->chest.chestRestockTime)
+                    {
+                        if (m_cooldownTime <= time(nullptr))
+                        {
+                            m_cooldownTime = 0;
+                            m_lootState = GO_READY;
+                            ForceValuesUpdateAtIndex(GAMEOBJECT_DYN_FLAGS);
+                        }
+
+                        return;
+                    }
+                    m_lootState = GO_READY;
+                    break;
                 }
                 default:
                     m_lootState = GO_READY;                 // for other GO is same switched without delay to GO_READY
@@ -581,26 +595,42 @@ void GameObject::Update(uint32 update_diff, uint32 /*p_time*/)
         }
         case GO_JUST_DEACTIVATED:
         {
-            // if Gameobject should cast spell, then this, but some GOs (type = 10) should be destroyed
-            if (GetGoType() == GAMEOBJECT_TYPE_GOOBER)
+            switch (GetGoType())
             {
-                uint32 spellId = GetGOInfo()->goober.spellId;
-
-                if (spellId)
+                // if Gameobject should cast spell, then this, but some GOs (type = 10) should be destroyed
+                case GAMEOBJECT_TYPE_GOOBER:
                 {
-                    // TODO find out why this is here, because m_UniqueUsers is empty for GAMEOBJECT_TYPE_GOOBER
-                    for (const auto& guid : m_UniqueUsers)
+                    uint32 spellId = GetGOInfo()->goober.spellId;
+
+                    if (spellId)
                     {
-                        if (Player* owner = GetMap()->GetPlayer(guid))
-                            owner->CastSpell(owner, spellId, false, nullptr, nullptr, GetObjectGuid());
+                        // TODO find out why this is here, because m_UniqueUsers is empty for GAMEOBJECT_TYPE_GOOBER
+                        for (const auto& guid : m_UniqueUsers)
+                        {
+                            if (Player* owner = GetMap()->GetPlayer(guid))
+                                owner->CastSpell(owner, spellId, false, nullptr, nullptr, GetObjectGuid());
+                        }
+
+                        ClearAllUsesData();
                     }
 
-                    ClearAllUsesData();
+                    SetGoState(GO_STATE_READY);
+
+                    //any return here in case battleground traps
+                    break;
                 }
-
-                SetGoState(GO_STATE_READY);
-
-                //any return here in case battleground traps
+                case GAMEOBJECT_TYPE_CHEST:
+                {
+                    // consumable confirmed to override chest restock
+                    if (!m_goInfo->chest.consumable && m_goInfo->chest.chestRestockTime)
+                    {
+                        m_cooldownTime = time(nullptr) + m_goInfo->chest.chestRestockTime;
+                        SetLootState(GO_NOT_READY);
+                        ForceValuesUpdateAtIndex(GAMEOBJECT_DYN_FLAGS);
+                        return;
+                    }
+                    break;
+                }
             }
 
             if (GetOwnerGuid() || (!m_spawnedByDefault && !GetGOData()))
@@ -1015,11 +1045,6 @@ void GameObject::DeleteFromDB() const
     WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", GetGUIDLow());
 }
 
-GameObjectInfo const* GameObject::GetGOInfo() const
-{
-    return m_goInfo;
-}
-
 /*********************************************************/
 /***                    QUEST SYSTEM                   ***/
 /*********************************************************/
@@ -1129,9 +1154,6 @@ bool GameObject::IsVisibleForInState(WorldObject const* pDetector, WorldObject c
                 if (!(pDetectorUnit->m_detectInvisibilityMask & (1 << 3))) // Detection des pieges
                     return false;
             }
-            // Smuggled Mana Cell required 10 invisibility type detection/state
-            if (GetEntry() == 187039 && ((pDetectorUnit->m_detectInvisibilityMask | pDetectorUnit->m_invisibilityMask) & (1 << 10)) == 0)
-                return false;
         }
         
     }
@@ -2027,7 +2049,7 @@ char const* GameObject::GetNameForLocaleIdx(int32 loc_idx) const
         }
     }
 
-    return GetName();
+    return GameObject::GetName();
 }
 
 void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3 /*=0.0f*/)

@@ -2299,6 +2299,7 @@ class Player final: public Unit
         typedef std::list<Channel*> JoinedChannelsList;
         JoinedChannelsList m_channels;
         void UpdateLocalChannels(uint32 newZone);
+        std::string m_name;
     public:
         void JoinedChannel(Channel* c);
         void LeftChannel(Channel* c);
@@ -2319,10 +2320,13 @@ class Player final: public Unit
         bool IsDND() const { return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_DND); }
         uint8 GetChatTag() const;
 
+        char const* GetName() const final { return m_name.c_str(); }
+        void SetName(std::string const& newname) { m_name = newname; }
+
         float GetYellRange() const;
-        void Say(std::string const& text, uint32 const language) const;
-        void Yell(std::string const& text, uint32 const language) const;
-        void TextEmote(std::string const& text) const;
+        void Say(char const* text, uint32 const language) const;
+        void Yell(char const* text, uint32 const language) const;
+        void TextEmote(char const* text) const;
 
         /*********************************************************/
         /***                   FACTION SYSTEM                  ***/

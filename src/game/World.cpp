@@ -636,6 +636,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMin(CONFIG_UINT32_MASS_MAILER_SEND_PER_TICK, "MassMailer.SendPerTick", 10, 1);
 
+    setConfigMin(CONFIG_UINT32_RETURNED_MAIL_PR_TICK, "Mail.ReturnedMail.PerTick", 5, 1);
+
     setConfig(CONFIG_UINT32_BANLIST_RELOAD_TIMER, "BanListReloadTimer", 60);
     setConfigPos(CONFIG_UINT32_UPTIME_UPDATE, "UpdateUptimeInterval", 10);
     if (reload)
@@ -2090,6 +2092,41 @@ private:
     int32 i_textId;
     va_list* i_args;
 };
+class WorldBroadcastTextBuilder
+{
+public:
+    typedef std::vector<WorldPacket*> WorldPacketList;
+    explicit WorldBroadcastTextBuilder(uint32 textId) : i_textId(textId) {}
+    void operator()(WorldPacketList& data_list, uint32 loc_idx)
+    {
+        char const* text = sObjectMgr.GetBroadcastText(i_textId, loc_idx);
+        do_helper(data_list, (char*)text);
+    }
+private:
+    char* lineFromMessage(char*& pos)
+    {
+        char* start = strtok(pos, "\n");
+        pos = nullptr;
+        return start;
+    }
+    void do_helper(WorldPacketList& data_list, char* text)
+    {
+        char* pos = text;
+
+        while (char* line = lineFromMessage(pos))
+        {
+            WorldPacket* data = new WorldPacket();
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
+            ChatHandler::BuildChatPacket(*data, CHAT_MSG_BG_SYSTEM_NEUTRAL, line);
+#else
+            ChatHandler::BuildChatPacket(*data, CHAT_MSG_SYSTEM, line);
+#endif
+            data_list.push_back(data);
+        }
+    }
+
+    uint32 i_textId;
+};
 }                                                           // namespace MaNGOS
 
 /// Send a System Message to all players (except self if mentioned)
@@ -2111,6 +2148,21 @@ void World::SendWorldText(int32 string_id, ...)
     }
 
     va_end(ap);
+}
+
+void World::SendBroadcastTextToWorld(uint32 textId)
+{
+    MaNGOS::WorldBroadcastTextBuilder wt_builder(textId);
+    MaNGOS::LocalizedPacketListDo<MaNGOS::WorldBroadcastTextBuilder> wt_do(wt_builder);
+    for (const auto& itr : m_sessions)
+    {
+        if (WorldSession* session = itr.second)
+        {
+            Player* player = session->GetPlayer();
+            if (player && player->IsInWorld())
+                wt_do(player);
+        }
+    }
 }
 
 void World::SendGMTicketText(char const* text)
@@ -2922,20 +2974,20 @@ void World::LogMoneyTrade(ObjectGuid sender, ObjectGuid receiver, uint32 amount,
     logStmt.Execute();
 }
 
-void World::LogChat(WorldSession* sess, char const* type, std::string const& msg, PlayerPointer target, uint32 chanId, char const* chanStr)
+void World::LogChat(WorldSession* sess, char const* type, char const* msg, PlayerPointer target, uint32 chanId, char const* chanStr)
 {
     ASSERT(sess);
     PlayerPointer plr = sess->GetPlayerPointer();
     ASSERT(plr);
 
     if (target)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u -> %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), target->GetName(), target->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u -> %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), target->GetName(), target->GetObjectGuid().GetCounter(), msg);
     else if (chanId)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%u] %s:%u : %s", type, chanId, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%u] %s:%u : %s", type, chanId, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
     else if (chanStr)
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%s] %s:%u : %s", type, chanStr, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s:%s] %s:%u : %s", type, chanStr, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
     else
-        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg.c_str());
+        sLog.Player(sess, LOG_CHAT, LOG_LVL_MINIMAL, "[%s] %s:%u : %s", type, plr->GetName(), plr->GetObjectGuid().GetCounter(), msg);
 }
 
 void World::LogTransaction(PlayerTransactionData const& data)

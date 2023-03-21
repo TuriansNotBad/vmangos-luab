@@ -246,6 +246,7 @@ set (game_SRCS
     ItemEnchantmentMgr.h
     Language.h
     LootMgr.h
+    LoveIsInTheAir.h
     ObjectAccessor.h
     ObjectGridLoader.h
     ObjectGuid.h
