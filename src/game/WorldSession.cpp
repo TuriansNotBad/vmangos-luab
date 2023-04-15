@@ -502,37 +502,40 @@ void WorldSession::LogoutPlayer(bool Save)
         if (ObjectGuid lootGuid = GetPlayer()->GetLootGuid())
             DoLootRelease(lootGuid);
 
-        ///- If the player just died before logging out, make him appear as a ghost
-        if (inWorld && _player->GetDeathTimer())
+        if (inWorld)
         {
-            _player->GetHostileRefManager().deleteReferences();
-            _player->BuildPlayerRepop();
-            _player->RepopAtGraveyard();
+            ///- If the player just died before logging out, make him appear as a ghost
+            if (_player->GetDeathTimer())
+            {
+                _player->GetHostileRefManager().deleteReferences();
+                _player->BuildPlayerRepop();
+                _player->RepopAtGraveyard();
+            }
+            else if (_player->IsInCombat())
+            {
+                _player->CombatStop();
+                _player->GetHostileRefManager().setOnlineOfflineState(false);
+            }
+            else if (_player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
+            {
+                // this will kill character by SPELL_AURA_SPIRIT_OF_REDEMPTION
+                _player->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
+                //_player->SetDeathPvP(*); set at SPELL_AURA_SPIRIT_OF_REDEMPTION apply time
+                _player->KillPlayer();
+                _player->BuildPlayerRepop();
+                _player->RepopAtGraveyard();
+            }
+
+            _player->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_LEAVE_WORLD_CANCELS);
+
         }
-        else if (inWorld && _player->IsInCombat())
-        {
-            _player->CombatStop();
-            _player->GetHostileRefManager().setOnlineOfflineState(false);
-        }
-        else if (inWorld && _player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
-        {
-            // this will kill character by SPELL_AURA_SPIRIT_OF_REDEMPTION
-            _player->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
-            //_player->SetDeathPvP(*); set at SPELL_AURA_SPIRIT_OF_REDEMPTION apply time
-            _player->KillPlayer();
-            _player->BuildPlayerRepop();
-            _player->RepopAtGraveyard();
-        }
+        
 
         if (_player->IsInLFG())
             sWorld.GetLFGQueue().GetMessager().AddMessage([playerGuid = _player->GetObjectGuid()](LFGQueue* queue)
         {
             queue->RemovePlayerFromQueue(playerGuid, PLAYER_SYSTEM_LEAVE);
         });
-
-        //drop a flag if player is carrying it
-        if (BattleGround *bg = _player->GetBattleGround())
-            _player->LeaveBattleground(true);
 
         ///- Teleport to home if the player is in an invalid instance
         if (!_player->m_InstanceValid && !_player->IsGameMaster())
@@ -549,6 +552,22 @@ void WorldSession::LogoutPlayer(bool Save)
         {
             HandleMoveWorldportAckOpcode();
             sMapMgr.ExecuteSingleDelayedTeleport(_player); // Execute chain teleport if there are some
+        }
+
+        // drop the flag if player is carrying it
+        if (BattleGround *bg = _player->GetBattleGround())
+        {
+            _player->LeaveBattleground(true);
+
+            // check for teleports both before and after leaving bg
+            // fixes exploit where you can be considered to be inside bg
+            // while you are actually outside if you kill wow process on
+            // loading screen during the teleport into bg when joining
+            while (_player->IsBeingTeleportedFar())
+            {
+                HandleMoveWorldportAckOpcode();
+                sMapMgr.ExecuteSingleDelayedTeleport(_player);
+            }
         }
 
         // Refresh apres ca
