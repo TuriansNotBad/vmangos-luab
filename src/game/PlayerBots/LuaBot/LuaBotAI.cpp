@@ -302,7 +302,7 @@ void LuaBotAI::UpdateAILua(uint32 const diff) {
 		{
 			if (m_receivedBgInvite)
 			{
-				SendFakePacket(CMSG_BATTLEFIELD_PORT);
+				SendBattlefieldPortPacket();
 				m_receivedBgInvite = false;
 				return;
 			}
