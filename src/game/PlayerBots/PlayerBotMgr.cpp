@@ -255,7 +255,7 @@ void PlayerBotMgr::Update( uint32 diff )
 		sWorld.SendServerMessage(ServerMessageType::SERVER_MSG_CUSTOM, "Lua reload started.");
 
 		m_luaCease = false;
-		
+
 		GoalManager::ClearRegistered();
 		LogicManager::ClearRegistered();
 
@@ -280,27 +280,27 @@ void PlayerBotMgr::Update( uint32 diff )
 
 	// Temporary bots.
 	std::map<uint32, uint32>::iterator it;
-	for ( it = m_tempBots.begin(); it != m_tempBots.end(); ++it )
+	for (it = m_tempBots.begin(); it != m_tempBots.end(); ++it)
 	{
-		if ( it->second < diff )
+		if (it->second < diff)
 			it->second = 0;
 		else
 			it->second -= diff;
 	}
 	it = m_tempBots.begin();
-	while ( it != m_tempBots.end() )
+	while (it != m_tempBots.end())
 	{
-		if ( !it->second )
+		if (!it->second)
 		{
 			// Update of "chatBot" too.
-			for ( auto iter = m_bots.begin(); iter != m_bots.end(); ++iter )
-				if ( iter->second->accountId == it->first )
+			for (auto iter = m_bots.begin(); iter != m_bots.end(); ++iter)
+				if (iter->second->accountId == it->first)
 				{
 					iter->second->state = PB_STATE_OFFLINE; // Will get logged out at next WorldSession::Update call
-					m_bots.erase( iter );
+					m_bots.erase(iter);
 					break;
 				}
-			m_tempBots.erase( it );
+			m_tempBots.erase(it);
 			it = m_tempBots.begin();
 		}
 		else
@@ -331,41 +331,30 @@ void PlayerBotMgr::Update( uint32 diff )
 		return; // No need to update
 	m_lastUpdate = m_elapsedTime;
 
-	for ( auto iter = m_bots.begin(); iter != m_bots.end();)
+	for (auto iter = m_bots.begin(); iter != m_bots.end();)
 	{
-		if ( !m_confEnableRandomBots && !iter->second->customBot )
+		if (!m_confEnableRandomBots && !iter->second->customBot)
 		{
 			++iter;
 			continue;
 		}
 
-		if ( iter->second->state == PB_STATE_ONLINE )
+		if (iter->second->state == PB_STATE_ONLINE)
 		{
-			if ( !iter->second->m_pendingResponses.empty() &&
-				iter->second->ai && iter->second->ai->me )
+			if (iter->second->requestRemoval)
 			{
-				std::vector<uint16> pendingResponses = iter->second->m_pendingResponses;
-				iter->second->m_pendingResponses.clear();
-				for ( const auto opcode : pendingResponses )
-				{
-					iter->second->ai->SendFakePacket( opcode );
-				}
-			}
-
-			if ( iter->second->requestRemoval )
-			{
-				if ( iter->second->ai && iter->second->ai->me )
+				if (iter->second->ai && iter->second->ai->me)
 					iter->second->ai->me->RemoveFromGroup();
 
-				DeleteBot( iter );
+				DeleteBot(iter);
 
-				if ( WorldSession* sess = sWorld.FindSession( iter->second->accountId ) )
-					sess->LogoutPlayer( m_confAllowSaving );
+				if (WorldSession* sess = sWorld.FindSession(iter->second->accountId))
+					sess->LogoutPlayer(m_confAllowSaving);
 
 				iter->second->requestRemoval = false;
 
-				if ( iter->second->customBot )
-					iter = m_bots.erase( iter );
+				if (iter->second->customBot)
+					iter = m_bots.erase(iter);
 				else
 					++iter;
 				continue;
@@ -373,38 +362,38 @@ void PlayerBotMgr::Update( uint32 diff )
 		}
 
 		// Connection of pending bots
-		if ( iter->second->state != PB_STATE_LOADING )
+		if (iter->second->state != PB_STATE_LOADING)
 		{
 			++iter;
 			continue;
 		}
 
-		WorldSession* sess = sWorld.FindSession( iter->second->accountId );
+		WorldSession* sess = sWorld.FindSession(iter->second->accountId);
 
-		if ( !sess )
+		if (!sess)
 		{
 			// This may happen : just wait for the World to add the session.
 			++iter;
 			continue;
 		}
 
-		if ( iter->second->ai->OnSessionLoaded( iter->second.get(), sess ) )
+		if (iter->second->ai->OnSessionLoaded(iter->second.get(), sess))
 		{
-			OnBotLogin( iter->second.get() );
+			OnBotLogin(iter->second.get());
 			m_stats.loadingCount--;
 
-			if ( iter->second->isChatBot )
+			if (iter->second->isChatBot)
 				m_stats.onlineChat++;
 			else
 				m_stats.onlineCount++;
 		}
 		else
 		{
-			sLog.Out( LOG_BASIC, LOG_LVL_ERROR, "PLAYERBOT: Unable to load session id %u", iter->second->accountId );
-			DeleteBot( iter );
+			sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "PLAYERBOT: Unable to load session id %u", iter->second->accountId);
+			DeleteBot(iter);
 
-			if ( iter->second->customBot )
-				iter = m_bots.erase( iter );
+			if (iter->second->customBot)
+				iter = m_bots.erase(iter);
 			else
 				++iter;
 			continue;
@@ -413,11 +402,11 @@ void PlayerBotMgr::Update( uint32 diff )
 		++iter;
 	}
 
-	if ( !m_confEnableRandomBots )
+	if (!m_confEnableRandomBots)
 		return;
 
-	uint32 updatesCount = ( m_elapsedTime - m_lastBotsRefresh ) / m_confRandomBotsRefresh;
-	for ( uint32 i = 0; i < updatesCount; ++i )
+	uint32 updatesCount = (m_elapsedTime - m_lastBotsRefresh) / m_confRandomBotsRefresh;
+	for (uint32 i = 0; i < updatesCount; ++i)
 	{
 		AddOrRemoveBot();
 		m_lastBotsRefresh += m_confRandomBotsRefresh;

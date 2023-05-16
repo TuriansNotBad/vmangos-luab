@@ -174,8 +174,12 @@ World::~World()
         m_charDbWorkerThread.reset(nullptr);
     }
 
-    if (m_lfgQueueThread.joinable())
-        m_lfgQueueThread.join();
+    if (m_lfgQueueThread)
+    {
+        if (m_lfgQueueThread->joinable())
+            m_lfgQueueThread->join();
+        m_lfgQueueThread.reset(nullptr);
+    }
 
     //TODO free addSessQueue
 }
@@ -189,8 +193,10 @@ void World::Shutdown()
     if (m_charDbWorkerThread && m_charDbWorkerThread->joinable())
         m_charDbWorkerThread->join();
 
-    if (m_lfgQueueThread.joinable())
-        m_lfgQueueThread.join();
+    if (m_lfgQueueThread && m_lfgQueueThread->joinable())
+        m_lfgQueueThread->join();
+
+    sAnticheatMgr->StopWardenUpdateThread();
 }
 
 /// Find a session by its id
@@ -1624,6 +1630,7 @@ void World::SetInitialWorldSettings()
     sObjectMgr.LoadGossipMenuItemsLocales();                // must be after gossip menu items loading
     sObjectMgr.LoadPointOfInterestLocales();                // must be after POI loading
     sObjectMgr.LoadAreaLocales();
+    sObjectMgr.LoadAreaTriggerLocales();
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, ">>> Localization strings loaded");
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "");
 
@@ -1812,7 +1819,15 @@ void World::SetInitialWorldSettings()
         sObjectMgr.RestoreDeletedItems();
     }
 
-    StartLFGQueueThread();
+    if (GetWowPatch() >= WOW_PATCH_103 || !getConfig(CONFIG_BOOL_ACCURATE_LFG))
+    {
+        m_lfgQueueThread.reset(new std::thread([&]()
+        {
+            m_lfgQueue.Update();
+        }));
+    }
+
+    sAnticheatMgr->StartWardenUpdateThread();
 
     m_broadcaster =
         std::make_unique<MovementBroadcaster>(getConfig(CONFIG_UINT32_PACKET_BCAST_THREADS),
@@ -2510,14 +2525,6 @@ bool World::RemoveBanAccount(BanMode mode, std::string const& source, std::strin
         sAccountMgr.UnbanAccount(account);
     }
     return true;
-}
-
-void World::StartLFGQueueThread()
-{
-    m_lfgQueueThread = std::thread([&]()
-    {
-        m_lfgQueue.Update();
-    });
 }
 
 /// Update the game time
