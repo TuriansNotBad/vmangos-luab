@@ -906,6 +906,20 @@ uint32 LuaBotAI::GetSpellOfRank(uint32 spellID, uint32 rank) {
 }
 
 
+void LuaBotAI::AddItemToInventory(uint32 itemId, uint32 count, int32 randomPropertyId)
+{
+	ItemPosCountVec dest;
+	uint8 msg = me->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, itemId, count);
+	if (msg == EQUIP_ERR_OK)
+	{
+		if (randomPropertyId < 1)
+			randomPropertyId = Item::GenerateItemRandomPropertyId(itemId);
+		if (Item* pItem = me->StoreNewItem(dest, itemId, true, randomPropertyId))
+			pItem->SetCount(count);
+	}
+}
+
+
 bool LuaBotAI::EquipCopyFromMaster() {
 
 	Player* owner = ObjectAccessor::FindPlayer(m_leaderGuid);
@@ -983,8 +997,8 @@ uint32 LuaBotAI::EquipFindItemByName(const std::string& name) {
 }
 
 
-void LuaBotAI::EquipItem(uint32 itemID) {
-	AddItemToInventory(itemID);
+void LuaBotAI::EquipItem(uint32 itemID, int32 randomPropertyId) {
+	AddItemToInventory(itemID, 1, randomPropertyId);
 	EquipOrUseNewItem();
 	// fix client bug causing some item slots to not be visible
 	if (Player* pLeader = GetPartyLeader())
@@ -1010,6 +1024,45 @@ void LuaBotAI::EquipEnchant(uint32 enchantID, EnchantmentSlot slot, EquipmentSlo
 	me->_ApplyItemMods(item, slot & 255, true);
 
 
+}
+
+
+uint32 LuaBotAI::EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot) {
+
+	Item* item = me->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
+	if (!item) {
+		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "EquipGetEnchantId: Attempt to get enchant id of an empty slot {}", itemSlot);
+		return 0;
+	}
+
+	return item->GetEnchantmentId(slot);
+
+}
+
+
+int32 LuaBotAI::EquipGetRandomProp(EquipmentSlots itemSlot) {
+
+	Item* item = me->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
+	if (!item) {
+		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "EquipGetRandomProp: Attempt to get random property id of an empty slot {}", itemSlot);
+		return 0;
+	}
+
+	return item->GetItemRandomPropertyId();
+
+}
+
+
+void LuaBotAI::EquipSetRandomProp(EquipmentSlots itemSlot, int32 id) {
+	Item* item = me->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
+	item->SetItemRandomProperties(id);
+	item->SetState(ITEM_CHANGED);
+	if (Player* pOwner = item->GetOwner())
+		item->AddToUpdateQueueOf(pOwner);
+	for (int slot = 3; slot < 6; slot++) {
+		me->_ApplyItemMods(item, slot & 255, false);
+		me->_ApplyItemMods(item, slot & 255, true);
+	}
 }
 
 

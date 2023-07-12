@@ -89,10 +89,14 @@ public:
     
     // equip
 
+    void AddItemToInventory(uint32 itemId, uint32 count = 1, int32 randomPropertyId = -1);
     uint32 EquipFindItemByName(const std::string& name);
-    void EquipItem(uint32 itemID);
+    void EquipItem(uint32 itemID, int32 randomPropertyId = -1);
     void EquipDestroyAll();
     void EquipEnchant(uint32 enchantID, EnchantmentSlot slot, EquipmentSlots itemSlot, int duration, int charges);
+    uint32 EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot);
+    int32 EquipGetRandomProp(EquipmentSlots itemSlot);
+    void EquipSetRandomProp(EquipmentSlots itemSlot, int32 id);
     bool EquipCopyFromMaster();
 
 

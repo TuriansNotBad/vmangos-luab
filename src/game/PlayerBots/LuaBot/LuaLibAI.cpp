@@ -585,7 +585,12 @@ int LuaBindsAI::AI_EquipCopyFromMaster(lua_State* L) {
 int LuaBindsAI::AI_EquipItem(lua_State* L) {
 	LuaBotAI* ai = *AI_GetAIObject(L);
 	int itemID = luaL_checkinteger(L, 2);
-	ai->EquipItem(itemID);
+	if (lua_gettop(L) > 2) {
+		int randomPropertyID = luaL_checkinteger(L, 3);
+		ai->EquipItem(itemID, randomPropertyID);
+	}
+	else
+		ai->EquipItem(itemID);
 	return 0;
 }
 
@@ -620,6 +625,32 @@ int LuaBindsAI::AI_EquipEnchant(lua_State* L) {
 		luaL_error(L, "AI.EquipEnchant: Invalid enchantment slot. Allowed values - [%d, %d). Got %d", PERM_ENCHANTMENT_SLOT, MAX_ENCHANTMENT_SLOT, islot);
 
 	ai->EquipEnchant(enchantID, EnchantmentSlot(islot), EquipmentSlots(iitemSlot), duration, charges);
+	return 0;
+}
+
+
+int LuaBindsAI::AI_EquipGetEnchantId(lua_State* L) {
+	LuaBotAI* ai = *AI_GetAIObject(L);
+	int islot = luaL_checkinteger(L, 2);
+	int iitemSlot = luaL_checkinteger(L, 3);
+	lua_pushinteger(L, ai->EquipGetEnchantId(EnchantmentSlot(islot), EquipmentSlots(iitemSlot)));
+	return 1;
+}
+
+
+int LuaBindsAI::AI_EquipGetRandomProp(lua_State* L) {
+	LuaBotAI* ai = *AI_GetAIObject(L);
+	int iitemSlot = luaL_checkinteger(L, 2);
+	lua_pushinteger(L, ai->EquipGetRandomProp(EquipmentSlots(iitemSlot)));
+	return 1;
+}
+
+
+int LuaBindsAI::AI_EquipSetRandomProp(lua_State* L) {
+	LuaBotAI* ai = *AI_GetAIObject(L);
+	int iitemSlot = luaL_checkinteger(L, 2);
+	int id = luaL_checkinteger(L, 3);
+	ai->EquipSetRandomProp(EquipmentSlots(iitemSlot), id);
 	return 0;
 }
 

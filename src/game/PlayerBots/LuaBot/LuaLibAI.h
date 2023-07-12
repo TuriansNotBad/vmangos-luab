@@ -61,6 +61,9 @@ namespace LuaBindsAI {
 	int AI_EquipItem(lua_State* L);
 	int AI_EquipDestroyAll(lua_State* L);
 	int AI_EquipEnchant(lua_State* L);
+	int AI_EquipGetEnchantId(lua_State* L);
+	int AI_EquipGetRandomProp(lua_State* L);
+	int AI_EquipSetRandomProp(lua_State* L);
 	int AI_EquipFindItemByName(lua_State* L);
 
 	// combat related
@@ -146,6 +149,9 @@ namespace LuaBindsAI {
 		{"EquipItem", AI_EquipItem},
 		{"EquipDestroyAll", AI_EquipDestroyAll},
 		{"EquipEnchant", AI_EquipEnchant},
+		{"EquipGetEnchantId", AI_EquipGetEnchantId},
+		{"EquipGetRandomProp", AI_EquipGetRandomProp},
+		{"EquipSetRandomProp", AI_EquipSetRandomProp},
 		{"EquipFindItemByName", AI_EquipFindItemByName},
 
 		// talents
