@@ -31,6 +31,9 @@ namespace LuaBindsAI {
 
 	int Player_LearnSpell(lua_State* L);
 	int Player_HasSpell(lua_State* L);
+	int Player_GetTalentTbl(lua_State* L);
+	int Player_GetTalentRank(lua_State* L);
+	int Player_HasTalent(lua_State* L);
 	int Player_RemoveSpellCooldown(lua_State* L);
 
 	// party related
@@ -70,8 +73,11 @@ namespace LuaBindsAI {
 		//spells
 		{"LearnSpell", Player_LearnSpell},
 		{"HasSpell", Player_HasSpell},
+		{"GetTalentTbl", Player_GetTalentTbl},
+		{"GetTalentRank", Player_GetTalentRank},
+		{"HasTalent", Player_HasTalent},
 		{"RemoveSpellCooldown", Player_RemoveSpellCooldown},
-
+		
 		// party related
 		{"GetGroupAttackersTbl", Player_GetGroupAttackersTbl},
 		{"GetGroupMemberCount", Player_GetGroupMemberCount},

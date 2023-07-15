@@ -128,6 +128,8 @@ LuaBotAI::LuaBotAI(Player* pLeader, Player* pClone, uint8 race, uint8 class_, ui
 {
 	topGoal.SetTerminated(true);
 	ceaseUpdates = false;
+	_queueGoname = false;
+	_queueGonameName = "";
 	userDataRef = LUA_NOREF;
 	userDataRefPlayer = LUA_NOREF;
 
@@ -251,6 +253,14 @@ void LuaBotAI::UpdateAILua(uint32 const diff) {
 		m_updateTimer.Reset(50);
 	else
 		return;
+
+	// catch up was queued
+	if (_queueGoname) {
+		_queueGoname = false;
+		GonameCommand(_queueGonameName);
+		_queueGonameName = "";
+		return;
+	}
 	
 	if (!me->IsInWorld() || me->IsBeingTeleported())
 		return;
@@ -508,7 +518,7 @@ bool LuaBotAI::DrinkAndEat(float healthPer, float manaPer)
 		return false;
 
 	bool const needToEat = me->GetHealthPercent() < healthPer;
-	bool const needToDrink = (me->GetPowerType() == POWER_MANA) && (me->GetPowerPercent(POWER_MANA) < manaPer);
+	bool const needToDrink = (me->GetPowerType() == POWER_MANA || me->GetClass() == CLASS_DRUID) && (me->GetPowerPercent(POWER_MANA) < manaPer);
 
 	bool const isEating = me->HasAura(PB_SPELL_FOOD);
 	bool const isDrinking = me->HasAura(PB_SPELL_DRINK);
@@ -556,7 +566,13 @@ bool LuaBotAI::DrinkAndEat(float healthPer, float manaPer)
 }
 
 
-void LuaBotAI::GonameCommand(char* name) {
+void LuaBotAI::GonameCommandQueue(std::string name) {
+	_queueGoname = true;
+	_queueGonameName = name;
+}
+
+
+void LuaBotAI::GonameCommand(std::string name) {
 	// will crash if moving
 	if (!me->IsStopped())
 		me->StopMoving();
@@ -565,7 +581,9 @@ void LuaBotAI::GonameCommand(char* name) {
 	me->ClearTarget();
 	topGoal = Goal(0, 0, Goal::NOPARAMS, nullptr, nullptr);
 	topGoal.SetTerminated(true);
-	ChatHandler(me).HandleGonameCommand(name);
+	char namecopy[128] = {};
+	strcpy(namecopy, name.c_str());
+	ChatHandler(me).HandleGonameCommand(namecopy);
 }
 
 
@@ -1051,22 +1069,6 @@ int32 LuaBotAI::EquipGetRandomProp(EquipmentSlots itemSlot) {
 	return item->GetItemRandomPropertyId();
 
 }
-
-
-void LuaBotAI::EquipSetRandomProp(EquipmentSlots itemSlot, int32 id) {
-	Item* item = me->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
-	item->SetItemRandomProperties(id);
-	item->SetState(ITEM_CHANGED);
-	if (Player* pOwner = item->GetOwner())
-		item->AddToUpdateQueueOf(pOwner);
-	for (int slot = 3; slot < 6; slot++) {
-		me->_ApplyItemMods(item, slot & 255, false);
-		me->_ApplyItemMods(item, slot & 255, true);
-	}
-}
-
-
-
 
 
 

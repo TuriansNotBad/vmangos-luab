@@ -48,7 +48,6 @@ namespace LuaBindsAI {
 
 	// talents
 
-	int AI_GetTalentTbl(lua_State* L);
 	int AI_GiveAllTalents(lua_State* L);
 	int AI_HasTalent(lua_State* L);
 	int AI_LearnTalent(lua_State* L);
@@ -63,7 +62,6 @@ namespace LuaBindsAI {
 	int AI_EquipEnchant(lua_State* L);
 	int AI_EquipGetEnchantId(lua_State* L);
 	int AI_EquipGetRandomProp(lua_State* L);
-	int AI_EquipSetRandomProp(lua_State* L);
 	int AI_EquipFindItemByName(lua_State* L);
 
 	// combat related
@@ -151,11 +149,9 @@ namespace LuaBindsAI {
 		{"EquipEnchant", AI_EquipEnchant},
 		{"EquipGetEnchantId", AI_EquipGetEnchantId},
 		{"EquipGetRandomProp", AI_EquipGetRandomProp},
-		{"EquipSetRandomProp", AI_EquipSetRandomProp},
 		{"EquipFindItemByName", AI_EquipFindItemByName},
 
 		// talents
-		{"GetTalentTbl", AI_GetTalentTbl},
 		{"GiveAllTalents", AI_GiveAllTalents},
 		{"HasTalent", AI_HasTalent},
 		{"LearnTalent", AI_LearnTalent},

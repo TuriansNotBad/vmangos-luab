@@ -537,6 +537,14 @@ int LuaBindsAI::Unit_IsCastingInterruptableSpell(lua_State* L) {
 }
 
 
+int LuaBindsAI::Unit_IsSpellReady(lua_State* L) {
+	Unit* unit = *Unit_GetUnitObject(L);
+	uint32 spellId = luaL_checkinteger(L, 2);
+	lua_pushboolean(L, unit->IsSpellReady(spellId));
+	return 1;
+}
+
+
 int LuaBindsAI::Unit_IsInCombat(lua_State* L) {
 	Unit* unit = *Unit_GetUnitObject(L);
 	lua_pushboolean(L, unit->IsInCombat());

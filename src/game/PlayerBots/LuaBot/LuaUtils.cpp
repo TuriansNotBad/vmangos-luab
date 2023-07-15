@@ -53,5 +53,73 @@ bool LuaBindsAI::IsValidHostileTarget(Unit* me, Unit const* pTarget) {
 }
 
 
+int LuaBindsAI::Player_GetTalentRankUtil(Player* me, uint32 talentID, lua_State* L) {
+
+	TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentID);
+	if (!talentInfo)
+		luaL_error(L, "AI.HasTalent: talent doesn't exist %d", talentID);
+
+	TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+	if (!talentTabInfo)
+		luaL_error(L, "AI.HasTalent: talent tab not found for talent %d", talentID);
+
+	uint32 classMask = me->GetClassMask();
+	if ((classMask & talentTabInfo->ClassMask) == 0)
+		luaL_error(L, "AI.HasTalent: class mask and talent class mask do not match cls = %d, talent = %d", classMask, talentTabInfo->ClassMask);
+
+	// search specified rank
+	uint32 spellid = 0;
+	for (int rank = MAX_TALENT_RANK - 1; rank >= 0; --rank) {
+
+		spellid = talentInfo->RankID[rank];
+		if (spellid != 0) {
+
+			SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellid);
+			if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, me, false))
+				continue;
+
+			if (me->HasSpell(spellid))
+				return rank;
+
+		}
+	}
+
+	return -1;
+}
+
+
+void LuaBindsAI::Player_HasTalentUtil(Player* me, lua_State* L) {
+	uint32 talentID = luaL_checkinteger(L, 2);
+
+	TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentID);
+	if (!talentInfo)
+		luaL_error(L, "AI.HasTalent: talent doesn't exist %d", talentID);
+
+	uint32 talentRank = luaL_checkinteger(L, 3);
+	if (talentRank >= MAX_TALENT_RANK)
+		luaL_error(L, "AI.HasTalent: talent rank cannot exceed %d", MAX_TALENT_RANK - 1);
+
+	TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+	if (!talentTabInfo)
+		luaL_error(L, "AI.HasTalent: talent tab not found for talent %d", talentID);
+
+	uint32 classMask = me->GetClassMask();
+	if ((classMask & talentTabInfo->ClassMask) == 0)
+		luaL_error(L, "AI.HasTalent: class mask and talent class mask do not match cls = %d, talent = %d", classMask, talentTabInfo->ClassMask);
+
+	// search specified rank
+	uint32 spellid = talentInfo->RankID[talentRank];
+	if (!spellid)                                       // ??? none spells in talent
+		luaL_error(L, "AI.HasTalent: talent %d rank %d not found", talentID, talentRank);
+
+	SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellid);
+	if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, me, false))
+		luaL_error(L, "AI.HasTalent: talent %d spell %d is not valid for player or doesn't exist", talentID, spellid);
+
+	lua_pushboolean(L, me->HasSpell(spellid));
+}
+
+
+
 
 

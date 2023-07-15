@@ -18,6 +18,8 @@ enum LuaBotRoles {
 
 class LuaBotAI : public PartyBotAI {
 
+    bool _queueGoname;
+    std::string _queueGonameName;
 
 public:
 
@@ -64,7 +66,8 @@ public:
     bool CanCastSpell(Unit const* pTarget, SpellEntry const* pSpellEntry, bool bAura = true, bool bGCD = true) const;
     bool DrinkAndEat(float healthPer, float manaPer);
     void SummonPetIfNeeded(uint32 petId);
-    void GonameCommand(char* name);
+    void GonameCommand(std::string name);
+    void GonameCommandQueue(std::string name);
     void Mount(bool toMount, uint32 mountSpell);
     Player* GetPartyLeader() const;
     int HasEventRequest() { return eventRequest != -1; }
@@ -96,7 +99,6 @@ public:
     void EquipEnchant(uint32 enchantID, EnchantmentSlot slot, EquipmentSlots itemSlot, int duration, int charges);
     uint32 EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot);
     int32 EquipGetRandomProp(EquipmentSlots itemSlot);
-    void EquipSetRandomProp(EquipmentSlots itemSlot, int32 id);
     bool EquipCopyFromMaster();
 
 

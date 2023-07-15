@@ -62,6 +62,7 @@ namespace LuaBindsAI {
 	int Unit_IsInCombat(lua_State* L);
 	int Unit_IsNonMeleeSpellCasted(lua_State* L);
 	int Unit_IsCastingInterruptableSpell(lua_State* L);
+	int Unit_IsSpellReady(lua_State* L);
 	int Unit_IsTargetInRangeOfSpell(lua_State* L);
 	int Unit_IsValidHostileTarget(lua_State* L);
 	int Unit_PetAttack(lua_State* L);
@@ -203,6 +204,7 @@ namespace LuaBindsAI {
 		{"IsInCombat", Unit_IsInCombat},
 		{"IsNonMeleeSpellCasted", Unit_IsNonMeleeSpellCasted},
 		{"IsCastingInterruptableSpell", Unit_IsCastingInterruptableSpell},
+		{"IsSpellReady", Unit_IsSpellReady},
 		{"IsTargetInRangeOfSpell", Unit_IsTargetInRangeOfSpell},
 		{"IsValidHostileTarget", Unit_IsValidHostileTarget},
 

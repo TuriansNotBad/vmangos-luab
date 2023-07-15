@@ -245,84 +245,6 @@ int LuaBindsAI::AI_SetSpec(lua_State* L) {
 // -----------------------------------------------------------
 
 
-int LuaBindsAI::AI_GetTalentTbl(lua_State* L) {
-	LuaBotAI* ai = *AI_GetAIObject(L);
-
-	// from cs_learn.cpp
-	Player* player = ai->me;
-	uint32 classMask = player->GetClassMask();
-
-	lua_newtable(L);
-	int tblIdx = 1;
-
-	for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
-	{
-		TalentEntry const* talentInfo = sTalentStore.LookupEntry(i);
-		if (!talentInfo)
-			continue;
-
-		TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
-		if (!talentTabInfo)
-			continue;
-
-		if ((classMask & talentTabInfo->ClassMask) == 0)
-			continue;
-
-		uint32 spellId = 0;
-		uint8 rankId = MAX_TALENT_RANK;
-		for (int8 rank = MAX_TALENT_RANK - 1; rank >= 0; --rank)
-		{
-			if (talentInfo->RankID[rank] != 0)
-			{
-				rankId = rank;
-				spellId = talentInfo->RankID[rank];
-				break;
-			}
-		}
-
-		if (!spellId || rankId == MAX_TALENT_RANK)
-			continue;
-
-		SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellId);
-		if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo))
-			continue;
-
-		lua_newtable(L);
-		lua_newtable(L);
-		for (lua_Integer rank = 0; rank <= rankId; ++rank)
-			if (talentInfo->RankID[rank] != 0) {
-				lua_pushinteger(L, talentInfo->RankID[rank]);
-				lua_seti(L, -2, rank + 1);
-			}
-		lua_setfield(L, -2, "RankID");
-		lua_pushinteger(L, spellId);
-		lua_setfield(L, -2, "spellID");
-		lua_pushinteger(L, rankId);
-		lua_setfield(L, -2, "maxRankID");
-		lua_pushinteger(L, talentInfo->TalentID);
-		lua_setfield(L, -2, "TalentID");
-		lua_pushinteger(L, talentInfo->Col);
-		lua_setfield(L, -2, "Col");
-		lua_pushinteger(L, talentInfo->Row);
-		lua_setfield(L, -2, "Row");
-		lua_pushinteger(L, talentInfo->TalentTab);
-		lua_setfield(L, -2, "TalentTab");
-		lua_pushinteger(L, talentInfo->DependsOn);
-		lua_setfield(L, -2, "DependsOn");
-		lua_pushinteger(L, talentInfo->DependsOnRank);
-		lua_setfield(L, -2, "DependsOnRank");
-		lua_pushstring(L, spellInfo->SpellName[0].c_str());
-		lua_setfield(L, -2, "spellName");
-		lua_pushinteger(L, talentTabInfo->TalentTabID);
-		lua_setfield(L, -2, "tabID");
-		lua_seti(L, -2, tblIdx);
-		++tblIdx;
-	}
-
-	return 1;
-}
-
-
 int LuaBindsAI::AI_GiveAllTalents(lua_State* L) {
 	LuaBotAI* ai = *AI_GetAIObject(L);
 	// From CharacterCommands.cpp
@@ -406,34 +328,7 @@ int LuaBindsAI::AI_LearnTalent(lua_State* L) {
 
 int LuaBindsAI::AI_HasTalent(lua_State* L) {
 	LuaBotAI* ai = *AI_GetAIObject(L);
-	uint32 talentID = luaL_checkinteger(L, 2);
-
-	TalentEntry const* talentInfo = sTalentStore.LookupEntry(talentID);
-	if (!talentInfo)
-		luaL_error(L, "AI.LearnTalent: talent doesn't exist %d", talentID);
-
-	uint32 talentRank = luaL_checkinteger(L, 3);
-	if (talentRank >= MAX_TALENT_RANK)
-		luaL_error(L, "AI.LearnTalent: talent rank cannot exceed %d", MAX_TALENT_RANK - 1);
-
-	TalentTabEntry const* talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
-	if (!talentTabInfo)
-		luaL_error(L, "AI.LearnTalent: talent tab not found for talent %d", talentID);
-
-	uint32 classMask = ai->me->GetClassMask();
-	if ((classMask & talentTabInfo->ClassMask) == 0)
-		luaL_error(L, "AI.LearnTalent: class mask and talent class mask do not match cls = %d, talent = %d", classMask, talentTabInfo->ClassMask);
-
-	// search specified rank
-	uint32 spellid = talentInfo->RankID[talentRank];
-	if (!spellid)                                       // ??? none spells in talent
-		luaL_error(L, "AI.LearnTalent: talent %d rank %d not found", talentID, talentRank);
-
-	SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellid);
-	if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, ai->me, false))
-		luaL_error(L, "AI.LearnTalent: talent %d spell %d is not valid for player or doesn't exist", talentID, spellid);
-
-	lua_pushboolean(L, ai->me->HasSpell(spellid));
+	Player_HasTalentUtil(ai->me, L);
 	return 1;
 }
 
@@ -643,15 +538,6 @@ int LuaBindsAI::AI_EquipGetRandomProp(lua_State* L) {
 	int iitemSlot = luaL_checkinteger(L, 2);
 	lua_pushinteger(L, ai->EquipGetRandomProp(EquipmentSlots(iitemSlot)));
 	return 1;
-}
-
-
-int LuaBindsAI::AI_EquipSetRandomProp(lua_State* L) {
-	LuaBotAI* ai = *AI_GetAIObject(L);
-	int iitemSlot = luaL_checkinteger(L, 2);
-	int id = luaL_checkinteger(L, 3);
-	ai->EquipSetRandomProp(EquipmentSlots(iitemSlot), id);
-	return 0;
 }
 
 
@@ -888,10 +774,10 @@ int LuaBindsAI::AI_EquipOrUseNewItem(lua_State* L) {
 
 
 int LuaBindsAI::AI_GoName( lua_State* L ) {
-	LuaBotAI** ai = AI_GetAIObject( L );
+	LuaBotAI* ai = *AI_GetAIObject( L );
 	char name[128] = {};
 	strcpy( name, luaL_checkstring( L, 2 ) );
-	( *ai )->GonameCommand( name );
+	ai->GonameCommandQueue(name);
 	return 0;
 }
 
