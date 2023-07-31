@@ -2043,7 +2043,7 @@ bool ChatHandler::isValidChatMessage(char const* message)
     ItemPrototype const* linkedItem = nullptr;
     SpellEntry const* linkedSpell = nullptr;
 
-    std::list<int> properties;
+    std::vector<int> properties;
 
     while (!reader.eof())
     {
