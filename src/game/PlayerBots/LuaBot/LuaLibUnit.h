@@ -26,6 +26,7 @@ namespace LuaBindsAI {
 	int Unit_CastSpell(lua_State* L);
 	int Unit_ClearTarget(lua_State* L);
 	int Unit_GetAttackersTbl(lua_State* L);
+	int Unit_GetAttackersN(lua_State* L);
 	int Unit_GetAttackRange(lua_State* L);
 	int Unit_GetAttackTimer(lua_State* L);
 	int Unit_GetAuraStacks(lua_State* L);
@@ -52,6 +53,7 @@ namespace LuaBindsAI {
 	int Unit_GetVictim(lua_State* L);
 	int Unit_GetVictimsInRange(lua_State* L);
 	int Unit_GetVictimNearest(lua_State* L);
+	int Unit_HasAttackers(lua_State* L);
 	int Unit_HasAura(lua_State* L);
 	int Unit_HasAuraBy(lua_State* L);
 	int Unit_HasAuraType(lua_State* L);
@@ -164,6 +166,7 @@ namespace LuaBindsAI {
 		{"ClearTarget", Unit_ClearTarget},
 
 		{"GetAttackersTbl", Unit_GetAttackersTbl},
+		{"GetAttackersN", Unit_GetAttackersN},
 		{"GetAttackRange", Unit_GetAttackRange},
 		{"GetAttackTimer", Unit_GetAttackTimer},
 		{"GetAuraStacks", Unit_GetAuraStacks},
@@ -193,6 +196,7 @@ namespace LuaBindsAI {
 		{"GetVictimsInRange", Unit_GetVictimsInRange},
 		{"GetVictimNearest", Unit_GetVictimNearest},
 
+		{"HasAttackers", Unit_HasAttackers},
 		{"HasAura", Unit_HasAura},
 		{"HasAuraBy", Unit_HasAuraBy},
 		{"HasAuraType", Unit_HasAuraType},

@@ -787,6 +787,18 @@ uint32 LuaBotAI::GetSpellChainPrev(uint32 spellID) {
 }
 
 
+uint32 LuaBotAI::GetSpellLevel(uint32 spellID) {
+	auto info_orig = sSpellMgr.GetSpellEntry(spellID);
+	// spell not found
+	if (!info_orig) {
+		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "GetSpellName: spell %d not found.", spellID);
+		return 0;
+	}
+
+	return info_orig->spellLevel;
+}
+
+
 std::string LuaBotAI::GetSpellName(uint32 spellID) {
 
 	auto info_orig = sSpellMgr.GetSpellEntry(spellID);

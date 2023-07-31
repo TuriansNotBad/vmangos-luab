@@ -149,6 +149,13 @@ int LuaBindsAI::Unit_ClearTarget(lua_State* L) {
 }
 
 
+int LuaBindsAI::Unit_GetAttackersN(lua_State* L) {
+	Unit* unit = *Unit_GetUnitObject(L);
+	lua_pushinteger(L, unit->GetAttackers().size());
+	return 1;
+}
+
+
 int LuaBindsAI::Unit_GetAttackersTbl(lua_State* L) {
 	Unit* unit = *Unit_GetUnitObject(L);
 	lua_newtable(L);
@@ -423,6 +430,13 @@ int LuaBindsAI::Unit_GetCurrentSpellId(lua_State* L) {
 		lua_pushinteger(L, curSpell->m_spellInfo->Id);
 	else
 		lua_pushinteger(L, -1);
+	return 1;
+}
+
+
+int LuaBindsAI::Unit_HasAttackers(lua_State* L) {
+	Unit* unit = *Unit_GetUnitObject(L);
+	lua_pushboolean(L, !unit->GetAttackers().empty());
 	return 1;
 }
 

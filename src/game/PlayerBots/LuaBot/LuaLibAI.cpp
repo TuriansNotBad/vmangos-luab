@@ -403,6 +403,17 @@ int LuaBindsAI::AI_GetSpellName(lua_State* L) {
 }
 
 
+int LuaBindsAI::AI_GetSpellLevel(lua_State* L) {
+	LuaBotAI* ai = *AI_GetAIObject(L);
+	int spellID = luaL_checkinteger(L, 2);
+	uint32 result = ai->GetSpellLevel(spellID);
+	if (result == 0)
+		luaL_error(L, "AI.GetSpellLevel: spell not found. %d", spellID);
+	lua_pushinteger(L, result);
+	return 1;
+}
+
+
 int LuaBindsAI::AI_GetSpellOfRank(lua_State* L) {
 	LuaBotAI* ai = *AI_GetAIObject(L);
 	int spellID = luaL_checkinteger(L, 2);

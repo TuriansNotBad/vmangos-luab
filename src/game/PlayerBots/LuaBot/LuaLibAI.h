@@ -38,6 +38,7 @@ namespace LuaBindsAI {
 	int AI_GetSpellChainFirst(lua_State* L);
 	int AI_GetSpellChainPrev(lua_State* L);
 	int AI_GetSpellName(lua_State* L);
+	int AI_GetSpellLevel(lua_State* L);
 	int AI_GetSpellRank(lua_State* L);
 	int AI_GetSpellOfRank(lua_State* L);
 	int AI_GetSpellMaxRankForLevel(lua_State* L);
@@ -133,6 +134,7 @@ namespace LuaBindsAI {
 		{"GetSpellChainFirst", AI_GetSpellChainFirst},
 		{"GetSpellChainPrev", AI_GetSpellChainPrev},
 		{"GetSpellName", AI_GetSpellName},
+		{"GetSpellLevel", AI_GetSpellLevel},
 		{"GetSpellRank", AI_GetSpellRank},
 		{"GetSpellOfRank", AI_GetSpellOfRank},
 		{"GetSpellMaxRankForLevel", AI_GetSpellMaxRankForLevel},

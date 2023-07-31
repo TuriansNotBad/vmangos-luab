@@ -89,6 +89,7 @@ public:
     uint32 GetSpellMaxRankForLevel(uint32 lastSpell, uint32 level);
     uint32 GetSpellOfRank(uint32 lastSpell, uint32 rank);
     std::string GetSpellName(uint32 spellID);
+    uint32 GetSpellLevel(uint32 spellID);
     
     // equip
 

@@ -29,6 +29,7 @@ namespace LuaBindsAI {
 	int Player_GetComboPoints(lua_State* L);
 	// spells
 
+	int Player_CastSpellAtInventoryItem(lua_State* L);
 	int Player_LearnSpell(lua_State* L);
 	int Player_HasSpell(lua_State* L);
 	int Player_GetTalentTbl(lua_State* L);
@@ -71,6 +72,7 @@ namespace LuaBindsAI {
 
 		{"GetComboPoints", Player_GetComboPoints},
 		//spells
+		{"CastSpellAtInventoryItem", Player_CastSpellAtInventoryItem},
 		{"LearnSpell", Player_LearnSpell},
 		{"HasSpell", Player_HasSpell},
 		{"GetTalentTbl", Player_GetTalentTbl},

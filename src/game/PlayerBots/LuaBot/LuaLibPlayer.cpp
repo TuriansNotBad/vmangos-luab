@@ -5,6 +5,7 @@
 #include "Group.h"
 #include "PlayerAI.h"
 #include "LuaBotAI.h"
+#include "Spell.h"
 
 
 void LuaBindsAI::Player_CreateUD(Player* player, lua_State* L) {
@@ -164,6 +165,43 @@ int LuaBindsAI::Player_GetComboPoints(lua_State* L) {
 // -----------------------------------------------------------
 //                      Spells
 // -----------------------------------------------------------
+int LuaBindsAI::Player_CastSpellAtInventoryItem(lua_State* L) {
+	Player* caster = *Player_GetPlayerObject(L);
+	Player* target = *Player_GetPlayerObject(L, 2);
+	int spellId = luaL_checkinteger(L, 3);
+	int itemSlot = luaL_checkinteger(L, 4);
+
+	// mostly code from HandleCastSpellOpcode
+
+	SpellEntry const* spellInfo = sSpellMgr.GetSpellEntry(spellId);
+	if (!spellInfo)
+		luaL_error(L, "Player.CastSpellAtInventoryItem: spell not found. Id %d", spellId);
+
+	if (itemSlot < EQUIPMENT_SLOT_START || itemSlot >= EQUIPMENT_SLOT_END)
+		luaL_error(L, "Player.CastSpellAtInventoryItem: invalid equipment slot. Got %d, must be [%d, %d]", itemSlot, EQUIPMENT_SLOT_START, EQUIPMENT_SLOT_END);
+
+	Item* item;
+	item = target->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
+	if (!item)
+		luaL_error(L, "Player.CastSpellAtInventoryItem: item not found. Slot %d, target %s, caster %s", itemSlot, target->GetName(), caster->GetName());
+
+	SpellCastTargets targets;
+	targets.m_targetMask = SpellCastTargetFlags::TARGET_FLAG_ITEM;
+	targets.setItemTarget(item);
+
+	SpellEntry const* originalSpellInfo = spellInfo;
+	Spell* spell = new Spell(caster, spellInfo, false, ObjectGuid(), nullptr, nullptr);
+
+	// Spell has been down-ranked, remember what client wanted to cast.
+	if (spellInfo != originalSpellInfo)
+		spell->m_originalSpellInfo = originalSpellInfo;
+
+	// Nostalrius : Ivina
+	spell->SetClientStarted(true);
+	SpellCastResult result = spell->prepare(std::move(targets));
+	lua_pushinteger(L, result);
+	return 1;
+}
 
 
 int LuaBindsAI::Player_LearnSpell(lua_State* L) {
