@@ -100,24 +100,9 @@ int LuaBindsAI::GetPlayerByGuid(lua_State* L) {
 }
 
 
-float LuaBindsAI::NormalizeOrientation(float o)
-{
-	// fmod only supports positive numbers. Thus we have
-	// to emulate negative numbers
-	if (o < 0)
-	{
-		float mod = o * -1;
-		mod = std::fmod(mod, 2.0f * static_cast<float>(M_PI));
-		mod = -mod + 2.0f * static_cast<float>(M_PI);
-		return mod;
-	}
-	return std::fmod(o, 2.0f * static_cast<float>(M_PI));
-}
-
-
 float LuaBindsAI::GetAbsoluteAngle(float x, float y, float myX, float myY)
 {
-	return NormalizeOrientation(std::atan2(
+	return MapManager::NormalizeOrientation(std::atan2(
 		static_cast<float>(y - myY),
 		static_cast<float>(x - myX))
 	);

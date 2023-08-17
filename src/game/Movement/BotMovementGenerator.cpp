@@ -389,7 +389,7 @@ bool BotChaseMovementGenerator<T>::Update(T& owner, uint32 const& time_diff)
                 // stay in your angle tolerance if we don't have aggro
                 if (!targetMoved && i_target->GetVictim() && i_target->GetVictim()->GetObjectGuid() != owner.GetObjectGuid())
                 {
-                    float relAngle = i_target->GetAngle(&owner) - i_target->GetOrientation();
+                    float relAngle = MapManager::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
                     float angleDiff = std::abs(relAngle - m_fAngle);
                     targetMoved = std::min(angleDiff, (float) (M_PI) * 2 - angleDiff) > m_angleT;
                 }
@@ -702,7 +702,7 @@ bool BotFollowMovementGenerator<T>::Update(T& owner, uint32 const& time_diff)
 
             if (!targetMoved)
             {
-                float relAngle = i_target->GetAngle(&owner) - i_target->GetOrientation();
+                float relAngle = MapManager::NormalizeOrientation(i_target->GetAngle(&owner) - i_target->GetOrientation());
                 float angleDiff = std::abs(relAngle - m_fAngle);
                 targetMoved = std::min(angleDiff, (float)(M_PI) * 2 - angleDiff) > 0.26F;
             }

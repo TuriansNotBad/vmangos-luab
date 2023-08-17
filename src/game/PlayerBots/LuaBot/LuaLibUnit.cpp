@@ -1300,7 +1300,7 @@ int LuaBindsAI::Unit_GetPosition(lua_State* L) {
 int LuaBindsAI::Unit_GetRelativeAngle(lua_State* L) {
 	Unit* unit = *Unit_GetUnitObject(L);
 	Unit* to = *Unit_GetUnitObject(L, 2);
-	lua_pushnumber(L, unit->GetAngle(to) - unit->GetOrientation());
+	lua_pushnumber(L, MapManager::NormalizeOrientation(unit->GetAngle(to) - unit->GetOrientation()));
 	return 1;
 }
 
@@ -1360,7 +1360,7 @@ int LuaBindsAI::Unit_SetOrientation(lua_State* L) {
 int LuaBindsAI::Unit_ToAbsoluteAngle(lua_State* L) {
 	Unit* unit = *Unit_GetUnitObject(L);
 	float angle = luaL_checknumber(L, 2);
-	lua_pushnumber(L, NormalizeOrientation(angle + unit->GetOrientation()));
+	lua_pushnumber(L, MapManager::NormalizeOrientation(angle + unit->GetOrientation()));
 	return 1;
 }
 
