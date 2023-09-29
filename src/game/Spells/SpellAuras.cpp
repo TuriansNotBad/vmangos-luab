@@ -1786,6 +1786,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         m_modifier.periodictime = 5 * IN_MILLISECONDS; // expected to tick with 5 sec period
                         return;
                     }
+                    case 16739: // Orb of Deception (before patch 1.7)
+                        return HandleAuraTransform(apply, Real);
                     case 21827: // Frostwolf Aura DND
                     case 21863: // Alterac Ram Aura DND
                     {
@@ -1966,6 +1968,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
                 return;
             }
+            case 16739: // Orb of Deception (before patch 1.7)
+                return HandleAuraTransform(apply, Real);
             case 20939: // Undying Soul - Dummy aura used for Unstuck command
             {
                 if (m_removeMode == AURA_REMOVE_BY_EXPIRE)
@@ -3847,8 +3851,12 @@ void Aura::HandleModStealth(bool apply, bool Real)
         if (Real)
         {
             target->SetByteFlag(UNIT_FIELD_BYTES_1, UNIT_BYTES_1_OFFSET_VIS_FLAG, UNIT_VIS_FLAGS_CREEP);
+
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
             if (target->GetTypeId() == TYPEID_PLAYER)
                 target->SetByteFlag(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_FLAGS, PLAYER_FIELD_BYTE2_STEALTH);
+#endif
+
             // apply only if not in GM invisibility (and overwrite invisibility state)
             if (target->GetVisibility() != VISIBILITY_OFF)
             {
@@ -3886,8 +3894,12 @@ void Aura::HandleModStealth(bool apply, bool Real)
             if (target->GetVisibility() != VISIBILITY_OFF)
             {
                 target->RemoveByteFlag(UNIT_FIELD_BYTES_1, UNIT_BYTES_1_OFFSET_VIS_FLAG, UNIT_VIS_FLAGS_CREEP);
+
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
                 if (target->GetTypeId() == TYPEID_PLAYER)
                     target->RemoveByteFlag(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_FLAGS, PLAYER_FIELD_BYTE2_STEALTH);
+#endif
+
                 // restore invisibility if any
                 if (target->HasAuraType(SPELL_AURA_MOD_INVISIBILITY))
                 {
@@ -3910,11 +3922,13 @@ void Aura::HandleInvisibility(bool apply, bool Real)
         target->m_invisibilityMask |= (1 << m_modifier.m_miscvalue);
         target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_STEALTH_INVIS_CANCELS);
 
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
         if (Real && target->GetTypeId() == TYPEID_PLAYER)
         {
             // apply glow vision
             target->SetByteFlag(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_FLAGS, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
         }
+#endif
 
         // apply only if not in GM invisibility and not stealth
         if (target->GetVisibility() == VISIBILITY_ON)
@@ -3935,9 +3949,11 @@ void Aura::HandleInvisibility(bool apply, bool Real)
         // only at real aura remove and if not have different invisibility auras.
         if (Real && target->m_invisibilityMask == 0)
         {
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_6_1
             // remove glow vision
             if (target->GetTypeId() == TYPEID_PLAYER)
                 target->RemoveByteFlag(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_FLAGS, PLAYER_FIELD_BYTE2_INVISIBILITY_GLOW);
+#endif
             // apply only if not in GM invisibility & not stealthed while invisible
             if (target->GetVisibility() != VISIBILITY_OFF)
             {
@@ -3969,10 +3985,14 @@ void Aura::HandleInvisibilityDetect(bool apply, bool Real)
 
 void Aura::HandleDetectAmore(bool apply, bool /*real*/)
 {
+// World of Warcraft Client Patch 1.9.3 (2006-02-07)
+// - Love is in the Air added.
+#if SUPPORTED_CLIENT_BUILD >= CLIENT_BUILD_1_9_4
     if (!GetTarget()->IsPlayer())
         return;
 
     GetTarget()->ApplyModByteFlag(PLAYER_FIELD_BYTES2, PLAYER_FIELD_BYTES_2_OFFSET_FLAGS, PLAYER_FIELD_BYTE2_DETECT_AMORE, apply);
+#endif
 }
 
 void Aura::HandleAuraModRoot(bool apply, bool Real)
@@ -4160,9 +4180,12 @@ void Aura::HandleAuraModIncreaseSpeed(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (Unit* caster = GetCaster())
-        if (Player* modOwner = caster->GetSpellModOwner())
-            modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+    if (apply && !GetHolder()->IsAddedBySpell())
+    {
+        if (Unit* caster = GetCaster())
+            if (Player* modOwner = caster->GetSpellModOwner())
+                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+    }
 
     GetTarget()->UpdateSpeed(MOVE_RUN, false);
 }
@@ -4191,9 +4214,12 @@ void Aura::HandleAuraModDecreaseSpeed(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (Unit* caster = GetCaster())
-        if (Player* modOwner = caster->GetSpellModOwner())
-            modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+    if (apply && !GetHolder()->IsAddedBySpell())
+    {
+        if (Unit* caster = GetCaster())
+            if (Player* modOwner = caster->GetSpellModOwner())
+                modOwner->ApplySpellMod(GetSpellProto()->Id, SPELLMOD_SPEED, m_modifier.m_amount);
+    }
 
     Unit* target = GetTarget();
 
@@ -4288,8 +4314,13 @@ void Aura::HandleAuraModSchoolImmunity(bool apply, bool Real)
     target->ApplySpellImmune(GetId(), IMMUNITY_SCHOOL, m_modifier.m_miscvalue, apply);
 
     // remove all flag auras (they are positive, but they must be removed when you are immune)
-    if (apply && GetSpellProto()->HasAttribute(SPELL_ATTR_EX_IMMUNITY_PURGES_EFFECT)
-              && GetSpellProto()->HasAttribute(SPELL_ATTR_EX2_FAIL_ON_ALL_TARGETS_IMMUNE)
+    if (apply
+        // World of Warcraft Client Patch 1.7.0 (2005-09-13)
+        // Offensive use of damage immunities no longer causes the flag to drop
+        // in Warsong Gulch.
+#if SUPPORTED_CLIENT_BUILD > CLIENT_BUILD_1_6_1
+              && IsPositive()
+#endif
               && target->IsPlayer() && !target->IsCharmed())
         target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_INVULNERABILITY_BUFF_CANCELS);
 
@@ -5164,7 +5195,6 @@ void Aura::HandleAuraModCritPercent(bool apply, bool Real)
     if (GetSpellProto()->EquippedItemClass == -1)
     {
         ((Player*)target)->HandleBaseModValue(CRIT_PERCENTAGE,         FLAT_MOD, m_modifier.m_amount, apply);
-        ((Player*)target)->HandleBaseModValue(OFFHAND_CRIT_PERCENTAGE, FLAT_MOD, m_modifier.m_amount, apply);
         ((Player*)target)->HandleBaseModValue(RANGED_CRIT_PERCENTAGE,  FLAT_MOD, m_modifier.m_amount, apply);
     }
     else
@@ -6741,7 +6771,7 @@ SpellAuraHolder::SpellAuraHolder(SpellEntry const* spellproto, Unit* target, Uni
     m_stackAmount(1), m_removeMode(AURA_REMOVE_BY_DEFAULT), m_AuraDRGroup(DIMINISHING_NONE), m_timeCla(1000),
     m_permanent(false), m_isRemovedOnShapeLost(true), m_deleted(false), m_in_use(0),
     m_debuffLimitAffected(false), m_debuffLimitScore(0), _heartBeatRandValue(0), _pveHeartBeatData(nullptr),
-    m_spellTriggered(false), m_isReflected(false), m_AuraDRLevel(DIMINISHING_LEVEL_1)
+    m_spellTriggered(false), m_isReflected(false), m_addedBySpell(false), m_AuraDRLevel(DIMINISHING_LEVEL_1)
 {
     MANGOS_ASSERT(target);
     MANGOS_ASSERT(spellproto && spellproto == sSpellMgr.GetSpellEntry(spellproto->Id) && "`info` must be pointer to a sSpellMgr element");
