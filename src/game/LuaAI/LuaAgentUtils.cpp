@@ -1,7 +1,7 @@
 #include "LuaAgentUtils.h"
 #include "LuaAgentLibPlayer.h"
 #include "LuaAgentLibUnit.h"
-
+#include "lua.hpp"
 
 namespace
 {
@@ -67,4 +67,65 @@ void* luaL_checkudwithfield(lua_State* L, int idx, const char* fieldName) {
 	luaL_error(L, "Invalid argument type. Userdata expected, got %s", lua_typename(L, lua_type(L, idx)));
 	// unreachable, just to silence the warning
 	return nullptr; 
+}
+
+
+bool luaL_setnfromfield(lua_State* L, int idx, const char* fieldName, float& n)
+{
+	bool set = false;
+	if (lua_type(L, -1) == LUA_TTABLE)
+	{
+		if (lua_getfield(L, -1, fieldName) == LUA_TNUMBER)
+		{
+			n = lua_tonumber(L, -1);
+			set = true;
+		}
+		lua_pop(L, 1);
+	}
+	return set;
+}
+
+
+bool luaL_setsfromfield(lua_State* L, int idx, const char* fieldName, std::string& s)
+{
+	bool set = false;
+	if (lua_type(L, -1) == LUA_TTABLE)
+	{
+		if (lua_getfield(L, -1, fieldName) == LUA_TSTRING)
+		{
+			s = lua_tostring(L, -1);
+			set = true;
+		}
+		lua_pop(L, 1);
+	}
+	return set;
+}
+
+
+lua_RefHolder::lua_RefHolder(int type) : m_type(type), m_ref(LUA_NOREF) {}
+bool lua_RefHolder::Ref(lua_State* L)
+{
+	if (m_ref == LUA_NOREF && lua_type(L, -1) == m_type)
+	{
+		lua_pushvalue(L, -1);
+		m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+		return true;
+	}
+	return false;
+}
+
+
+void lua_RefHolder::Unref(lua_State* L)
+{
+	if (m_ref == LUA_NOREF) return;
+	if (lua_rawgeti(L, LUA_REGISTRYINDEX, m_ref) == m_type)
+		luaL_unref(L, LUA_REGISTRYINDEX, m_ref);
+	lua_pop(L, 1);
+	m_ref = LUA_NOREF;
+}
+
+
+int lua_RefHolder::Push(lua_State* L)
+{
+	return lua_rawgeti(L, LUA_REGISTRYINDEX, m_ref);
 }

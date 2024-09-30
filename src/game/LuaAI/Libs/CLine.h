@@ -285,12 +285,14 @@ struct DungeonData
 	int mapId{-1};
 	std::vector<CLine> lines;
 
-	bool GetPointInLosAtD(Unit* me, Unit* target, Unit* losTarget, G3D::Vector3& result, float minD, float maxD, float step, bool reverse)
+	bool GetPointInLosAtD(Unit* me, Unit* target, Unit* losTarget, G3D::Vector3& result, float minD, float maxD, float step, bool reverse, int lineIdx = -1)
 	{
 		const G3D::Vector3 from(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
 		float D, pct = 0.f;
 		int S;
-		CLine& line = lines[ClosestP(from, result, D, S, pct)];
+		int closestLine = ClosestP(from, result, D, S, pct);
+		if (lineIdx > 0 && closestLine != lineIdx) return false;
+		CLine& line = lines[closestLine];
 		return line.GetPointInLosAtD(me, target, losTarget, result, S, minD, maxD, step, pct, reverse);
 	}
 

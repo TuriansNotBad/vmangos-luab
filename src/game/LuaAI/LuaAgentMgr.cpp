@@ -13,6 +13,7 @@
 #include <experimental/filesystem>
 #include <fstream>
 #include "Libs/CLine.h"
+#include "Libs/ObserveRegion.h"
 
 
 class LuaAgentLoginQueryHolder : public LoginQueryHolder
@@ -85,6 +86,7 @@ LuaAgentMgr::LuaAgentMgr() :
 	m_loadedFiles()
 {
 	m_updateTimer.Reset(0);
+	m_triggerRecordStorage = std::make_unique<LuaAI::TriggerRecordStorage>();
 }
 
 
@@ -152,6 +154,7 @@ void LuaAgentMgr::LuaLoadFiles(const std::string& fpath) {
 
 void LuaAgentMgr::LuaLoadAll() {
 	std::string fpath = "ai";
+	m_triggerRecordStorage->Clear(nullptr);
 	if (L) lua_close(L); // kill old state
 	L = nullptr;
 
@@ -777,7 +780,8 @@ bool LuaAgentMgr::LoadDungeonData()
 	{
 		lua_pushcfunction(L, __LoadDungeonData);
 		lua_pushlightuserdata(L, &m_dungeons);
-		if (lua_dopcall(L, 1, 0) != LUA_OK)
+		lua_pushlightuserdata(L, m_triggerRecordStorage.get());
+		if (lua_dopcall(L, 2, 0) != LUA_OK)
 		{
 			m_bLuaCeaseUpdates = true;
 			sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "LuaAgentMgr: Lua error loading dungeon data: %s", lua_tostring(L, -1));
@@ -792,7 +796,9 @@ bool LuaAgentMgr::LoadDungeonData()
 int LuaAgentMgr::__LoadDungeonData(lua_State* L)
 {
 	luaL_checktype(L, -1, LUA_TLIGHTUSERDATA);
-	auto m_dungeons = static_cast<std::unordered_map<uint32, std::unique_ptr<DungeonData>>*>(lua_touserdata(L, -1));
+	luaL_checktype(L, -2, LUA_TLIGHTUSERDATA);
+	auto m_dungeons = static_cast<std::unordered_map<uint32, std::unique_ptr<DungeonData>>*>(lua_touserdata(L, -2));
+	auto m_triggerRecordStorage = static_cast<LuaAI::TriggerRecordStorage*>(lua_touserdata(L, -1));
 	lua_getglobal(L, "t_dungeons");
 	luaL_checktype(L, -1, LUA_TTABLE);
 	lua_pushnil(L);
@@ -805,7 +811,22 @@ int LuaAgentMgr::__LoadDungeonData(lua_State* L)
 		std::unique_ptr<DungeonData> data = std::make_unique<DungeonData>();
 		data->LoadFromTable(L, mapId);
 		m_dungeons->emplace(data->mapId, std::move(data));
-		lua_pop(L, 1);
+
+		// load triggers
+		if (lua_getfield(L, -1, "triggers") == LUA_TTABLE)
+		{
+			lua_Integer nLines = luaL_len(L, -1);
+			for (lua_Integer i = 1; i <= nLines; ++i)
+			{
+				if (lua_geti(L, -1, i) == LUA_TTABLE)
+					m_triggerRecordStorage->RefTriggerRecord(mapId, L);
+				else
+					luaL_error(L, "LuaAgentMgr::__LoadDungeonData trigger idx %d is not a table for map %d - type %s", i, mapId, luaL_typename(L, -1));
+				lua_pop(L, 1);
+			}
+		}
+
+		lua_pop(L, 2);
 	}
 	lua_pop(L, 1);
 	return 0;

@@ -444,6 +444,8 @@ set (game_SRCS
     LuaAI/Libs/Utility.h
     LuaAI/Libs/CLine.cpp
     LuaAI/Libs/CLine.h
+    LuaAI/Libs/ObserveRegion.cpp
+    LuaAI/Libs/ObserveRegion.h
     LuaAI/LuaAgentBindsCommon.cpp
     LuaAI/LuaAgentBindsCommon.h
     LuaAI/LuaAgentUtils.cpp

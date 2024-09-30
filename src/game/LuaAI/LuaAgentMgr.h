@@ -2,6 +2,11 @@
 #ifndef MANGOS_LUAAGENTMANAGER_H
 #define MANGOS_LUAAGENTMANAGER_H
 
+namespace LuaAI
+{
+	class TriggerRecordStorage;
+}
+
 struct lua_State;
 struct DungeonData;
 class PartyIntelligence;
@@ -55,6 +60,7 @@ class LuaAgentMgr
 	std::map<ObjectGuid, LuaAgentInfoHolder> m_toAdd;
 
 	std::unordered_map<uint32, std::unique_ptr<DungeonData>> m_dungeons;
+	std::unique_ptr<LuaAI::TriggerRecordStorage> m_triggerRecordStorage;
 
 	LuaAgentMgr();
 
@@ -94,6 +100,7 @@ public:
 	bool IsReloading() const { return m_bLuaReload; }
 	bool LuaDofile(const std::string& filename);
 	bool LuaIsFiledLoaded(const std::string& fname) { return m_loadedFiles.find(fname) != m_loadedFiles.end(); }
+	void LuaCeaseUpdates() { m_bLuaCeaseUpdates = true; }
 
 	Player* GetAgent(ObjectGuid guid);
 	const LuaAgentInfoHolder* GetLoginInfo(ObjectGuid guid);
@@ -125,6 +132,7 @@ public:
 	void CLineLoad(const std::string& fname);
 	void CLineFinish(Player* gm);
 	DungeonData* GetDungeonData(uint32 key);
+	LuaAI::TriggerRecordStorage* GetTriggerRecordStorage() { return m_triggerRecordStorage.get(); }
 
 	static LuaAgentMgr& getInstance()
 	{

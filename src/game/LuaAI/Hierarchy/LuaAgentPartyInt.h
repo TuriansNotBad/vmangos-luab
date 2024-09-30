@@ -4,6 +4,11 @@
 
 #include "lua.hpp"
 
+namespace LuaAI
+{
+	class TriggerMgr;
+}
+
 const int PARTYINT_TIMER_COUNT_MAX = 20;
 typedef std::unordered_map<ObjectGuid, Player*> LuaAgentMap;
 class LuaAgent;
@@ -39,6 +44,7 @@ public:
 	float GetAngleForTank(LuaAgent* tank, Unit* target, bool& flipped, bool allowFlip, bool forceFlip = false);
 	DungeonData* GetDungeonData() { return m_dungeon; }
 	bool HasCLineFor(Unit* agent);
+	void InitTriggersForMap(lua_State* L, int mapId);
 
 	void LoadInfoFromLuaTbl(lua_State* L);
 	void LoadAgents();
@@ -50,6 +56,7 @@ public:
 
 	void CreateUD(lua_State* L);
 	void PushUD(lua_State* L);
+	void PushUV(lua_State* L);
 	void Unref(lua_State* L);
 
 	void SetCeaseUpdates(bool v) { m_bCeaseUpdates = v; }
@@ -76,6 +83,7 @@ private:
 	ShortTimeTracker m_updateTimer;
 
 	DungeonData* m_dungeon;
+	std::unique_ptr<LuaAI::TriggerMgr> m_triggerMgr;
 
 	std::vector<AgentInfo> m_agentInfos;
 	LuaAgentMap m_agents;
@@ -140,6 +148,8 @@ namespace LuaBindsAI {
 	int PartyInt_GetTimer(lua_State* L);
 	int PartyInt_IsFinishTimer(lua_State* L);
 
+	int PartyInt_InitTriggersForMap(lua_State* L);
+
 	static const struct luaL_Reg PartyInt_BindLib[]{
 		{"CanPullTarget", PartyInt_CanPullTarget},
 
@@ -183,6 +193,8 @@ namespace LuaBindsAI {
 		{"SetTimer", PartyInt_SetTimer},
 		{"GetTimer", PartyInt_GetTimer},
 		{"IsFinishTimer", PartyInt_IsFinishTimer},
+
+		{"InitTriggersForMap", PartyInt_InitTriggersForMap},
 
 		{NULL, NULL}
 	};

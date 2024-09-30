@@ -7,6 +7,7 @@
 #include "LuaAI/LuaAgentLibWorldObj.h"
 #include "LuaAI/LuaAgentLibUnit.h"
 #include "LuaAI/Libs/CLine.h"
+#include "LuaAI/Libs/ObserveRegion.h"
 
 
 const char* PartyIntelligence::PI_MTNAME = "Object.PartyInt";
@@ -56,6 +57,7 @@ PartyIntelligence::PartyIntelligence(std::string name, ObjectGuid owner) :
 	m_init = m_name + "_Init";
 	m_update = m_name + "_Update";
 	m_updateTimer.Reset(m_updateInterval);
+	m_triggerMgr = std::make_unique<LuaAI::TriggerMgr>();
 }
 
 
@@ -92,6 +94,7 @@ void PartyIntelligence::Reset(lua_State* L, bool dropRefs)
 	m_agents.clear();
 	m_cc.clear();
 	m_dungeon = nullptr;
+	m_triggerMgr->Clear();
 }
 
 
@@ -143,11 +146,17 @@ void PartyIntelligence::Update(uint32 diff, lua_State* L)
 
 	// dungeondata update
 	if (Player* owner = sObjectAccessor.FindPlayer(m_owner))
+	{
 		if (!m_dungeon || m_dungeon->mapId != owner->GetMapId())
 			if (DungeonData* data = sLuaAgentMgr.GetDungeonData(owner->GetMapId()))
 				m_dungeon = data;
 			else
 				m_dungeon = nullptr;
+
+		// Update triggers for owner
+		m_triggerMgr->UpdateForUnit(L, owner, this);
+	}
+
 	UpdateCC();
 
 	lua_getglobal(L, m_update.c_str());
@@ -308,6 +317,12 @@ void PartyIntelligence::PushUD(lua_State* L)
 }
 
 
+void PartyIntelligence::PushUV(lua_State* L)
+{
+	lua_getiuservalue(L, -1, 1);
+}
+
+
 void PartyIntelligence::Unref(lua_State* L)
 {
 	if (m_userDataRef != LUA_NOREF && m_userDataRef != LUA_REFNIL)
@@ -323,6 +338,13 @@ bool PartyIntelligence::HasCLineFor(Unit* agent)
 	if (m_dungeon ? m_dungeon->mapId == agent->GetMapId() : false)
 		return m_dungeon->lines.size() > 0;
 	return false;
+}
+
+
+void PartyIntelligence::InitTriggersForMap(lua_State* L, int mapId)
+{
+	m_triggerMgr->Clear();
+	m_triggerMgr->InitForMap(L, mapId);
 }
 
 
@@ -502,7 +524,7 @@ int LuaBindsAI::PartyInt_GetOwnerGuid(lua_State* L)
 int LuaBindsAI::PartyInt_GetData(lua_State* L)
 {
 	PartyIntelligence* intelligence = PartyInt_GetPIObject(L);
-	lua_getiuservalue(L, -1, 1);
+	intelligence->PushUV(L);
 	return 1;
 }
 
@@ -525,7 +547,7 @@ int LuaBindsAI::PartyInt_GetAgents(lua_State* L)
 		Player* agent = it.second;
 		if (LuaAgent* agentAI = agent->GetLuaAI())
 		{
-			if (agentAI->IsReady() && agentAI->IsInitialized())
+			if (agentAI->IsReady() && agentAI->IsInitialized() && agentAI->GetTopGoal()->GetActivated())
 			{
 				agentAI->PushUD(L);
 				lua_seti(L, -2, idx);
@@ -577,13 +599,14 @@ int LuaBindsAI::PartyInt_GetCLinePInLosAtD(lua_State* L)
 	lua_Number maxD = luaL_checknumber(L, 6);
 	lua_Number step = luaL_checknumber(L, 7);
 	bool reverse = luaL_checkboolean(L, 8);
+	lua_Integer lineIdx = lua_gettop(L) > 8 ? luaL_checkinteger(L, 9) : -1;
 	DungeonData* cline = intelligence->GetDungeonData();
 	if (!cline)
 		luaL_error(L, "PartyInt_GetCLinePInLosAtD: cline doesn't exist");
 	if (cline->mapId != agent->GetMapId())
 		luaL_error(L, "PartyInt_GetCLinePInLosAtD: cline map mismatch");
 	G3D::Vector3 result;
-	bool found = cline->GetPointInLosAtD(agent, target, losTarget, result, minD, maxD, step, reverse);
+	bool found = cline->GetPointInLosAtD(agent, target, losTarget, result, minD, maxD, step, reverse, lineIdx);
 	if (!found || agent->GetDistanceSqr(result.x, result.y, result.z) < 4.0f)
 	{
 		lua_pushnil(L);
@@ -610,6 +633,11 @@ int LuaBindsAI::PartyInt_GetNearestCLineP(lua_State* L)
 {
 	PartyIntelligence* intelligence = PartyInt_GetPIObject(L);
 	Unit* unit = Unit_GetUnitObject(L, 2);
+	float x, y, z;
+	if (lua_gettop(L) < 3)
+		x = unit->GetPositionX(), y = unit->GetPositionY(), z = unit->GetPositionZ();
+	else
+		x = luaL_checknumber(L, 3), y = luaL_checknumber(L, 4), z = luaL_checknumber(L, 5);
 	DungeonData* cline = intelligence->GetDungeonData();
 	if (!cline)
 		luaL_error(L, "PartyInt_GetNearestCLineP: cline doesn't exist");
@@ -618,7 +646,7 @@ int LuaBindsAI::PartyInt_GetNearestCLineP(lua_State* L)
 	G3D::Vector3 P;
 	float D, pct;
 	int S;
-	int line = cline->ClosestP(G3D::Vector3(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ()), P, D, S, pct);
+	int line = cline->ClosestP(G3D::Vector3(x,y,z), P, D, S, pct);
 	lua_pushnumber(L, P.x);
 	lua_pushnumber(L, P.y);
 	lua_pushnumber(L, P.z);
@@ -707,6 +735,7 @@ int LuaBindsAI::PartyInt_ShouldReverseCLine(lua_State* L)
 	PartyIntelligence* intelligence = PartyInt_GetPIObject(L);
 	Unit* unit = Unit_GetUnitObject(L, 2);
 	Unit* target = Unit_GetUnitObject(L, 3);
+	bool useTargetLine = lua_gettop(L) > 3 ? luaL_checkboolean(L, 4) : false;
 	DungeonData* cline = intelligence->GetDungeonData();
 	if (!cline)
 		luaL_error(L, "PartyInt_ShouldReverseCLine: cline doesn't exist");
@@ -731,6 +760,11 @@ int LuaBindsAI::PartyInt_ShouldReverseCLine(lua_State* L)
 			{
 				lua_pushboolean(L, targetSegment < resultS);
 				return 1;
+			}
+			if (useTargetLine)
+			{
+				line = cline->lines[targetLineIdx];
+				resultS = targetSegment;
 			}
 		}
 
@@ -857,4 +891,12 @@ int LuaBindsAI::PartyInt_IsFinishTimer(lua_State* L) {
 	else
 		luaL_error(L, "PartyIntelligence.IsFinishTimer - number index out of bounds. Allowed - [0, %d)", PARTYINT_TIMER_COUNT_MAX);
 	return 1;
+}
+
+
+int LuaBindsAI::PartyInt_InitTriggersForMap(lua_State* L) {
+	PartyIntelligence* intelligence = PartyInt_GetPIObject(L);
+	lua_Integer mapId = luaL_checkinteger(L, 2);
+	intelligence->InitTriggersForMap(L, mapId);
+	return 0;
 }

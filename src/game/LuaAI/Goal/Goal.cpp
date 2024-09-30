@@ -115,11 +115,15 @@ Goal* Goal::AddSubGoal_Front(int goalId, double life, std::vector<GoalParamP>& g
 // Pops all subgoals from the queue.
 void Goal::ClearSubGoal() {
 	if (subgoals.size()) {
-		subgoals.resize(1);
 		auto& front = subgoals.front();
-		// prevent double push when Terminate calls ClearSubGoal
-		if (!front->bTerminationState && front->GetActivated())
-			manager->PushGoalOnTerminationQueue(front.get());
+		if (!front->GetActivated())
+			subgoals.clear();
+		else {
+			subgoals.resize(1);
+			// prevent double push if ClearSubGoal is called twice
+			if (!front->bTerminationState)
+				manager->PushGoalOnTerminationQueue(front.get());
+		}
 	}
 }
 // Pops front subgoal.
