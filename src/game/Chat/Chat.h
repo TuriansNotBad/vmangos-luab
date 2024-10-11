@@ -306,6 +306,7 @@ class ChatHandler
         bool HandleLuabRemovePartyCommand(char* args);
         bool HandleLuabRemoveAllCommand(char* args);
         bool HandleLuabResetCommand(char* args);
+        bool HandleLuabReloadAgents(char* args);
         bool HandleLuabGroupAllCommand(char* args);
         bool HandleLuabReviveAllCommand(char* args);
 

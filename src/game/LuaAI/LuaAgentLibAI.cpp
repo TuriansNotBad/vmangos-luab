@@ -52,6 +52,14 @@ void LuaBindsAI::AI_CreateMetatable(lua_State* L)
 }
 
 
+int LuaBindsAI::AI_HasReset(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_pushboolean(L, ai->HasReset());
+	return 1;
+}
+
+
 int LuaBindsAI::AI_AddTopGoal(lua_State* L)
 {
 	int nArgs = lua_gettop(L);
@@ -302,6 +310,14 @@ int LuaBindsAI::AI_GetChaseMaxT(lua_State* L)
 }
 
 
+int LuaBindsAI::AI_GetChaseSimple(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_pushboolean(L, ai->IsSimpleChaseMode());
+	return 1;
+}
+
+
 int LuaBindsAI::AI_SetChaseAngle(lua_State* L)
 {
 	LuaAgent* ai = AI_GetAIObject(L);
@@ -388,6 +404,15 @@ int LuaBindsAI::AI_SetChaseValues(lua_State* L)
 		gen->SetOffsetMin(lua_tonumber(L, 3));
 	if (lua_type(L, 4) == LUA_TNUMBER)
 		gen->SetOffsetMax(lua_tonumber(L, 4));
+	return 0;
+}
+
+
+int LuaBindsAI::AI_SetChaseSimple(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	bool v = luaL_checkboolean(L, 2);
+	ai->SetSimpleChaseMode(v);
 	return 0;
 }
 

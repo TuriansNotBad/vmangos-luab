@@ -504,6 +504,13 @@ void LuaAgentMgr::LogoutAllImmediately()
 }
 
 
+void LuaAgentMgr::ResetAgents()
+{
+	for (auto& itr : m_agents)
+		if (LuaAgent* agent = itr.second->GetLuaAI())
+			agent->Reset(false);
+}
+
 void LuaAgentMgr::ReviveAll(Player* owner, float hp, bool sickness)
 {
 	for (auto& itr : m_agents)

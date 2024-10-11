@@ -248,3 +248,9 @@ bool ChatHandler::HandleLuabClearBags(char* args)
 	//*/
 	return true;
 }
+
+bool ChatHandler::HandleLuabReloadAgents(char* args)
+{
+	sLuaAgentMgr.ResetAgents();
+	return true;
+}

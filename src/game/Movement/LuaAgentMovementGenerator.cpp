@@ -702,37 +702,39 @@ bool LuaAIChaseMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
     if (m_checkDistanceTimer.Passed())
     {
         m_checkDistanceTimer.Reset(50);
-        if (m_bIsSpreading)
+        //More distance let have better performance, less distance let have more sensitive reaction at target move.
+        if (!owner.movespline->Finalized() && i_target->IsWithinDist(&owner, 0.0f) && !m_fOffset)
         {
-            if (!owner.movespline->Finalized() && !owner.CanReachWithMeleeAutoAttack(i_target.getTarget()))
-            {
-                owner.movespline->_Interrupt();
-                interrupted = true;
-            }
+            owner.movespline->_Interrupt();
+            interrupted = true;
         }
         else
         {
-            //More distance let have better performance, less distance let have more sensitive reaction at target move.
-            if (!owner.movespline->Finalized() && i_target->IsWithinDist(&owner, 0.0f) && !m_fOffset)
+            float allowed_dist = owner.GetMaxChaseDistance(i_target.getTarget()) - 0.5f;
+            bool targetMoved = false;
+            G3D::Vector3 dest(m_fTargetLastX, m_fTargetLastY, m_fTargetLastZ);
+            if (GenericTransport* ownerTransport = owner.GetTransport())
             {
-                owner.movespline->_Interrupt();
-                interrupted = true;
+                if (m_bTargetOnTransport)
+                    ownerTransport->CalculatePassengerPosition(dest.x, dest.y, dest.z);
+                else
+                    targetMoved = true;
+            }
+            else if (m_bTargetOnTransport)
+                targetMoved = true;
+
+            bool bSimpleChase = false;
+            if (!m_bIsRanged)
+                if (Player* pOwner = owner.ToPlayer())
+                    if (LuaAgent* agent = pOwner->GetLuaAI())
+                        bSimpleChase = agent->IsSimpleChaseMode();
+
+            if (bSimpleChase)
+            {
+                targetMoved = !owner.CanReachWithMeleeAutoAttack(i_target.getTarget());
             }
             else
             {
-                float allowed_dist = owner.GetMaxChaseDistance(i_target.getTarget()) - 0.5f;
-                bool targetMoved = false;
-                G3D::Vector3 dest(m_fTargetLastX, m_fTargetLastY, m_fTargetLastZ);
-                if (GenericTransport* ownerTransport = owner.GetTransport())
-                {
-                    if (m_bTargetOnTransport)
-                        ownerTransport->CalculatePassengerPosition(dest.x, dest.y, dest.z);
-                    else
-                        targetMoved = true;
-                }
-                else if (m_bTargetOnTransport)
-                    targetMoved = true;
-
                 bool mutualChase = false;
                 if (Unit* victim = i_target->GetVictim())
                     if (victim->GetObjectGuid() == owner.GetObjectGuid())
@@ -743,172 +745,44 @@ bool LuaAIChaseMovementGenerator<T>::Update(T &owner, uint32 const&  time_diff)
 
                 if (!targetMoved)
                     targetMoved = IsAngleBad(owner, mutualChase);
+            }
 
-                if (targetMoved)
-                {
-                    m_bRecalculateTravel = true;
-                    owner.GetMotionMaster()->SetNeedAsyncUpdate();
-                }
-                else
-                {
-                    // Fly-hack
-                    if (Player* player = i_target->ToPlayer())
-                        if ((player->GetPositionZ() - allowed_dist - 5.0f) > dest.z)
-                            player->GetCheatData()->OnUnreachable(&owner);
-                }
+            if (targetMoved)
+            {
+                m_bRecalculateTravel = true;
+                owner.GetMotionMaster()->SetNeedAsyncUpdate();
             }
         }
     }
 
     if (owner.movespline->Finalized())
     {
-        if (owner.IsCreature() && !owner.HasInArc(i_target.getTarget(), 0.01f))
-            owner.SetInFront(i_target.getTarget());
+        MovementInform(owner);
 
-        if (m_bIsSpreading)
-            m_bIsSpreading = false;
-        else
+        if (!m_bTargetReached)
         {
-            MovementInform(owner);
-
-            if (!m_bTargetReached)
-            {
-                m_uiSpreadAttempts = 0;
-                m_bCanSpread = true;
-                m_bTargetReached = true;
-                _reachTarget(owner);
-            }
+            m_bTargetReached = true;
+            _reachTarget(owner);
         }
 
         if (interrupted)
             owner.StopMoving();
 
-        if (interrupted || owner.IsPlayer() && !owner.HasInArc(i_target.getTarget(), 0.25f))
+        if (interrupted || !owner.HasInArc(i_target.getTarget(), 0.25f))
             owner.SetFacingTo(owner.GetAngle(i_target.getTarget()));
-
-        m_spreadTimer.Update(time_diff);
-        if (m_spreadTimer.Passed())
-        {
-            m_spreadTimer.Reset(urand(2500, 3500));
-            if (Creature* creature = owner.ToCreature())
-            {
-                if (!creature->HasExtraFlag(CREATURE_FLAG_EXTRA_CHASE_GEN_NO_BACKING) && !creature->IsPet() && !i_target.getTarget()->IsMoving())
-                {
-                    if (m_bRecalculateTravel && TargetDeepInBounds(owner, i_target.getTarget()))
-                        DoBackMovement(owner, i_target.getTarget());
-                    else if (m_bCanSpread)
-                        DoSpreadIfNeeded(owner, i_target.getTarget());
-                }
-            }
-        }
-
-        // Mobs should chase you infinitely if you stop and wait every few seconds.
-        m_leashExtensionTimer.Update(time_diff);
-        if (m_leashExtensionTimer.Passed())
-        {
-            m_leashExtensionTimer.Reset(5000);
-            if (Creature* creature = owner.ToCreature())
-                creature->UpdateLeashExtensionTime();
-        }
     }
     else if (m_bRecalculateTravel)
     {
-        m_leashExtensionTimer.Reset(5000);
         owner.GetMotionMaster()->SetNeedAsyncUpdate();
     }
 
     return true;
 }
 
-template<class T>
-bool LuaAIChaseMovementGenerator<T>::TargetDeepInBounds(T &owner, Unit* target) const
-{
-    return TargetWithinBoundsPercentDistance(owner, target, 0.5f);
-}
-
-template<class T>
-bool LuaAIChaseMovementGenerator<T>::TargetWithinBoundsPercentDistance(T &owner, Unit* target, float pct) const
-{
-    float radius = std::min(target->GetObjectBoundingRadius(), owner.GetObjectBoundingRadius());
-        
-    radius *= pct;
-
-    return owner.GetDistanceSqr(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ()) < radius;
-}
-
-template<class T>
-void LuaAIChaseMovementGenerator<T>::DoBackMovement(T &owner, Unit* target)
-{
-    float x, y, z;
-    target->GetClosePoint(x, y, z, target->GetObjectBoundingRadius() + owner.GetObjectBoundingRadius(), 1.0f, m_fAngle, &owner);
-
-    // Don't move beyond attack range.
-    if (!owner.CanReachWithMeleeAutoAttackAtPosition(target, x, y, z, 0.0f))
-        return;
-
-    m_bIsSpreading = true;
-    Movement::MoveSplineInit init(owner, "LuaAIChaseMovementGenerator");
-    init.MoveTo(x, y, z, MOVE_WALK_MODE);
-    init.SetWalk(true);
-    init.Launch();
-}
-
-template<class T>
-void LuaAIChaseMovementGenerator<T>::DoSpreadIfNeeded(T &owner, Unit* target)
-{
-    // Move away from any NPC deep in our bounding box. There's no limit to the
-    // angle moved; NPCs will eventually start spreading behind the target if
-    // there's enough of them.
-    Unit* pSpreadingTarget = nullptr;
-
-    for (auto& attacker : target->GetAttackers())
-    {
-        if (attacker->IsCreature() && (attacker != &owner) &&
-            (owner.GetObjectBoundingRadius() - 2.0f < attacker->GetObjectBoundingRadius()) &&
-            !attacker->IsMoving() &&
-            (owner.GetDistanceSqr(attacker->GetPositionX(), attacker->GetPositionY(), attacker->GetPositionZ()) < std::min(std::max(owner.GetObjectBoundingRadius(), attacker->GetObjectBoundingRadius()), 0.25f)))
-        {
-            pSpreadingTarget = attacker;
-            break;
-        }
-    }
-
-    if (!pSpreadingTarget)
-    {
-        m_bCanSpread = false;
-        return;
-    }
-    
-    float const my_angle = target->GetAngle(&owner);
-    float const his_angle = target->GetAngle(pSpreadingTarget);
-    float const new_angle = (his_angle > my_angle) ? my_angle - frand(0.4f, 1.0f) : my_angle + frand(0.4f, 1.0f);
-    
-    float x, y, z;
-    target->GetNearPoint(&owner, x, y, z, owner.GetObjectBoundingRadius(), frand(0.8f, (target->GetAttackers().size() > 5 ? 4.0f : 2.0f)), new_angle);
-
-    // Don't move beyond attack range.
-    if (!owner.CanReachWithMeleeAutoAttackAtPosition(target, x, y, z, 0.0f))
-        return;
-
-    m_bIsSpreading = true;
-    m_uiSpreadAttempts++;
-
-    // Don't circle target infinitely if too many attackers.
-    if (m_uiSpreadAttempts >= 3)
-        m_bCanSpread = false;
-
-    Movement::MoveSplineInit init(owner, "LuaAIChaseMovementGenerator");
-    init.MoveTo(x, y, z, MOVE_WALK_MODE);
-    init.SetWalk(true);
-    init.Launch();
-}
-
 //-----------------------------------------------//
 template<class T>
 void LuaAIChaseMovementGenerator<T>::_reachTarget(T &owner)
 {
-    //if (owner.CanReachWithMeleeAutoAttack(this->i_target.getTarget()))
-    //    owner.Attack(this->i_target.getTarget(), true);
 }
 
 template<>

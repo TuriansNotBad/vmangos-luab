@@ -20,6 +20,8 @@ LuaAgent::LuaAgent(Player* me, ObjectGuid masterGuid, int logicID) :
 	m_bCeaseUpdates(false),
 	m_bInitialized(false),
 	m_bCmdQueueMode(false),
+	m_bHasReset(false),
+	m_bSimpleChaseMode(false),
 
 	m_userDataRef(LUA_NOREF),
 	m_userDataRefPlayer(LUA_NOREF),
@@ -180,10 +182,12 @@ void LuaAgent::Reset(bool dropRefs)
 		m_userDataRefPlayer = LUA_NOREF;
 	}
 	else {
+		if (!GetCeaseUpdates()) m_logicManager.Reset(L, this);
 		// delete all refs
 		Unref(L);
 		UnrefPlayerUD(L);
 		UnrefUserTbl(L);
+		m_bHasReset = true;
 	}
 	m_bInitialized = false;
 	m_queueGoname = false;

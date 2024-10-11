@@ -69,6 +69,8 @@ class LuaAgent
 	bool m_bCmdQueueMode;
 	bool m_bCeaseUpdates;
 	bool m_bInitialized;
+	bool m_bHasReset;
+	bool m_bSimpleChaseMode;
 
 	int m_userDataRef;
 	int m_userDataRefPlayer;
@@ -114,6 +116,9 @@ public:
 	void CreateUserTbl();
 	bool GetCeaseUpdates() { return m_bCeaseUpdates; }
 	void SetCeaseUpdates(bool value = true) { m_bCeaseUpdates = value; }
+	bool HasReset() { if (m_bHasReset) { m_bHasReset = false; return true; } return false; }
+	bool IsSimpleChaseMode() { return m_bSimpleChaseMode; }
+	void SetSimpleChaseMode(bool v) { m_bSimpleChaseMode = v; }
 
 	float GetStdThreat() { return m_stdThreat; }
 	void SetStdThreat(float value) { m_stdThreat = value; }

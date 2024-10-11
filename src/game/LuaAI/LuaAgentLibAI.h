@@ -14,6 +14,8 @@ namespace LuaBindsAI {
 	void AI_CreateMetatable(lua_State* L);
 	LuaAgent* AI_GetAIObject(lua_State* L, int idx = 1);
 
+	int AI_HasReset(lua_State* L);
+
 	int AI_AddTopGoal(lua_State* L);
 	int AI_GetTopGoal(lua_State* L);
 	int AI_HasTopGoal(lua_State* L);
@@ -39,6 +41,7 @@ namespace LuaBindsAI {
 	int AI_GetChaseDist(lua_State* L);
 	int AI_GetChaseMinT(lua_State* L);
 	int AI_GetChaseMaxT(lua_State* L);
+	int AI_GetChaseSimple(lua_State* L);
 	int AI_SetChaseAngle(lua_State* L);
 	int AI_SetChaseAngleT(lua_State* L);
 	int AI_SetChaseUseAngle(lua_State* L);
@@ -47,6 +50,7 @@ namespace LuaBindsAI {
 	int AI_SetChaseMinT(lua_State* L);
 	int AI_SetChaseMaxT(lua_State* L);
 	int AI_SetChaseValues(lua_State* L);
+	int AI_SetChaseSimple(lua_State* L);
 
 	int AI_GetAngleForTanking(lua_State* L);
 	int AI_GetPosForTanking(lua_State* L);
@@ -110,6 +114,8 @@ namespace LuaBindsAI {
 	int AI_GetSpellMaxRankForMe(lua_State* L);
 
 	static const struct luaL_Reg AI_BindLib[]{
+		{"HasReset", AI_HasReset},
+
 		{"AddTopGoal", AI_AddTopGoal},
 		{"GetTopGoal", AI_GetTopGoal},
 		{"HasTopGoal", AI_HasTopGoal},
@@ -133,6 +139,7 @@ namespace LuaBindsAI {
 		{"GetChaseDist", AI_GetChaseDist},
 		{"GetChaseMinT", AI_GetChaseMinT},
 		{"GetChaseMaxT", AI_GetChaseMaxT},
+		{"GetChaseSimple", AI_GetChaseSimple},
 		{"SetChaseAngleValues", AI_SetChaseAngleValues},
 		{"SetChaseAngle", AI_SetChaseAngle},
 		{"SetChaseAngleT", AI_SetChaseAngleT},
@@ -141,6 +148,7 @@ namespace LuaBindsAI {
 		{"SetChaseMinT", AI_SetChaseMinT},
 		{"SetChaseMaxT", AI_SetChaseMaxT},
 		{"SetChaseValues", AI_SetChaseValues},
+		{"SetChaseSimple", AI_SetChaseSimple},
 
 		{"GetPosForTanking", AI_GetPosForTanking},
 		{"GetAngleForTanking", AI_GetAngleForTanking},

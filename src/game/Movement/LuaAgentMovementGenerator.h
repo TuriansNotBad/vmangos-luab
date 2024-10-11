@@ -124,21 +124,10 @@ class LuaAIChaseMovementGenerator : public LuaAITargetedMovementGeneratorMedium<
         bool _lostTarget(T& u) const { return !GetTarget()->IsAlive();/*u.GetVictim() != this->GetTarget();*/ }
         void _reachTarget(T &);
     private:
-        ShortTimeTracker m_spreadTimer{ 0 };
-        ShortTimeTracker m_leashExtensionTimer{ 5000 };
-        bool m_bIsSpreading = false;
-        bool m_bCanSpread = true;
-        uint8 m_uiSpreadAttempts = 0;
-
         float m_angleT;
 
         bool IsAngleBad(T& owner, bool mutualChase);
         bool IsDistBad(T& owner, bool mutualChase);
-
-        void DoBackMovement(T &, Unit* target);
-        void DoSpreadIfNeeded(T &, Unit* target);
-        bool TargetDeepInBounds(T &, Unit* target) const;
-        bool TargetWithinBoundsPercentDistance(T &, Unit* target, float pct) const;
 
         // Needed to compile with gcc for some reason.
         using LuaAITargetedMovementGeneratorMedium<T, LuaAIChaseMovementGenerator<T> >::i_target;

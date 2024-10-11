@@ -102,6 +102,7 @@ public:
 	bool LuaIsFiledLoaded(const std::string& fname) { return m_loadedFiles.find(fname) != m_loadedFiles.end(); }
 	void LuaCeaseUpdates() { m_bLuaCeaseUpdates = true; }
 
+	void ResetAgents();
 	Player* GetAgent(ObjectGuid guid);
 	const LuaAgentInfoHolder* GetLoginInfo(ObjectGuid guid);
 
