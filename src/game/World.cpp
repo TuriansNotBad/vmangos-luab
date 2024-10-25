@@ -545,6 +545,7 @@ void World::LoadConfigSettings(bool reload)
 
     setConfigMinMax(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE, "TargetPosRecalculateRange", 1.5f, CONTACT_DISTANCE, ATTACK_DISTANCE);
 
+    setConfig(CONFIG_BOOL_DURABILITY_LOSS_ENABLE, "DurabilityLoss.Enable", true);
     setConfigPos(CONFIG_FLOAT_RATE_DURABILITY_LOSS_DAMAGE, "DurabilityLossChance.Damage", 0.5f);
 
     setConfigPos(CONFIG_FLOAT_LISTEN_RANGE_SAY,       "ListenRange.Say",       25.0f);
@@ -1601,9 +1602,6 @@ void World::SetInitialWorldSettings()
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading spell target destination coordinates...");
     sSpellMgr.LoadSpellTargetPositions();
 
-    sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading SpellAffect definitions...");
-    sSpellMgr.LoadSpellAffects();
-
     sLog.Out(LOG_BASIC, LOG_LVL_MINIMAL, "Loading spell pet auras...");
     sSpellMgr.LoadSpellPetAuras();
 
@@ -1946,12 +1944,16 @@ void World::DetectDBCLang()
 // Only processes packets while session update, the messager, and cli commands processing are NOT running
 void World::ProcessAsyncPackets()
 {
-    while (!sWorld.IsStopped())
+    do
     {
-        do
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-        } while (!m_canProcessAsyncPackets);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        std::lock_guard<std::mutex> lock(m_asyncPacketsMutex);
+
+        if (IsStopped())
+            return;
+
+        if (!m_canProcessAsyncPackets)
+            continue;
 
         for (auto const& itr : m_sessions)
         {
@@ -1964,7 +1966,7 @@ void World::ProcessAsyncPackets()
             if (!m_canProcessAsyncPackets)
                 break;
         }
-    }
+    } while (!IsStopped());
 }
 
 // Update the World !
@@ -1999,18 +2001,21 @@ void World::Update(uint32 diff)
         sAuctionMgr.Update();
     }
 
-    m_canProcessAsyncPackets = false;
+    {
+        m_canProcessAsyncPackets = false;
+        std::lock_guard<std::mutex> lock(m_asyncPacketsMutex);
 
-    GetMessager().Execute(this);
+        GetMessager().Execute(this);
 
-    // <li> Handle session updates
-    uint32 updateSessionsTime = WorldTimer::getMSTime();
-    UpdateSessions(diff);
-    updateSessionsTime = WorldTimer::getMSTimeDiffToNow(updateSessionsTime);
-    if (getConfig(CONFIG_UINT32_PERFLOG_SLOW_SESSIONS_UPDATE) && updateSessionsTime > getConfig(CONFIG_UINT32_PERFLOG_SLOW_SESSIONS_UPDATE))
-        sLog.Out(LOG_PERFORMANCE, LOG_LVL_MINIMAL, "Update sessions: %ums", updateSessionsTime);
+        // <li> Handle session updates
+        uint32 updateSessionsTime = WorldTimer::getMSTime();
+        UpdateSessions(diff);
+        updateSessionsTime = WorldTimer::getMSTimeDiffToNow(updateSessionsTime);
+        if (getConfig(CONFIG_UINT32_PERFLOG_SLOW_SESSIONS_UPDATE) && updateSessionsTime > getConfig(CONFIG_UINT32_PERFLOG_SLOW_SESSIONS_UPDATE))
+            sLog.Out(LOG_PERFORMANCE, LOG_LVL_MINIMAL, "Update sessions: %ums", updateSessionsTime);
 
-    m_canProcessAsyncPackets = true;
+        m_canProcessAsyncPackets = true;
+    }
 
     // <li> Update uptime table
     if (m_timers[WUPDATE_UPTIME].Passed())
@@ -2066,7 +2071,7 @@ void World::Update(uint32 diff)
     if (getConfig(CONFIG_UINT32_PERFLOG_SLOW_MAPSYSTEM_UPDATE) && updateMapSystemTime > getConfig(CONFIG_UINT32_PERFLOG_SLOW_MAPSYSTEM_UPDATE))
         sLog.Out(LOG_PERFORMANCE, LOG_LVL_MINIMAL, "Update map system: %ums [%ums for async]", updateMapSystemTime, WorldTimer::getMSTimeDiffToNow(asyncWaitBegin));
 
-    // Sauvegarde des variables internes (table variables) : MaJ par rapport a la DB
+    // Save internal variables (table variables) : DB update
     if (m_timers[WUPDATE_SAVE_VAR].Passed())
     {
         m_timers[WUPDATE_SAVE_VAR].Reset();
@@ -2121,12 +2126,15 @@ void World::Update(uint32 diff)
     sAccountMgr.Update(diff);
     sLuaAgentMgr.Update(diff);
 
-    m_canProcessAsyncPackets = false;
+    {
+        m_canProcessAsyncPackets = false;
+        std::lock_guard<std::mutex> lock(m_asyncPacketsMutex);
 
-    // And last, but not least handle the issued cli commands
-    ProcessCliCommands();
+        // And last, but not least handle the issued cli commands
+        ProcessCliCommands();
 
-    m_canProcessAsyncPackets = true;
+        m_canProcessAsyncPackets = true;
+    }
 
     //cleanup unused GridMap objects as well as VMaps
     if (getConfig(CONFIG_BOOL_CLEANUP_TERRAIN))

@@ -22,7 +22,7 @@
  */
 
 #include "WardenModule.hpp"
-#include "WardenKeyGeneration.h"
+#include "WardenKeyGenerator.h"
 
 #include "Common.h"
 #include "Language.h"
@@ -35,7 +35,7 @@
 #include "ByteBuffer.h"
 #include "Database/DatabaseEnv.h"
 #include "Policies/SingletonImp.h"
-#include "Auth/BigNumber.h"
+#include "Crypto/BigNumber.h"
 #include "Warden.hpp"
 #include "WardenModuleMgr.hpp"
 #include "Util.h"
@@ -43,9 +43,6 @@
 #include "WardenMac.hpp"
 #include "WardenScanMgr.hpp"
 #include "AccountMgr.h"
-
-#include <openssl/md5.h>
-#include <openssl/sha.h>
 
 #include <zlib.h>
 
@@ -111,7 +108,7 @@ Warden::Warden(WorldSession* session, WardenModule const* module, BigNumber cons
 {
     auto const kBytes = K.AsByteArray();
 
-    SHA1Randx WK(kBytes.data(), kBytes.size());
+    WardenKeyGenerator WK(kBytes.data(), kBytes.size());
 
     uint8 inputKey[KeyLength];
     WK.Generate(inputKey, sizeof(inputKey));
@@ -440,13 +437,14 @@ void Warden::StopScanClock()
 
 uint32 Warden::BuildChecksum(uint8 const* data, size_t size)
 {
-    uint8 hash[SHA_DIGEST_LENGTH];
-    SHA1(data, size, hash);
+    auto hash = Crypto::Hash::SHA1::ComputeFrom(data, size);
 
     uint32 checkSum = 0;
-
-    for (auto i = 0u; i < sizeof(hash) / sizeof(uint32); ++i)
-        checkSum ^= *reinterpret_cast<uint32*>(&hash[i * 4]);
+    checkSum ^= *reinterpret_cast<uint32*>(&hash[sizeof(uint32) * 0]);
+    checkSum ^= *reinterpret_cast<uint32*>(&hash[sizeof(uint32) * 1]);
+    checkSum ^= *reinterpret_cast<uint32*>(&hash[sizeof(uint32) * 2]);
+    checkSum ^= *reinterpret_cast<uint32*>(&hash[sizeof(uint32) * 3]);
+    checkSum ^= *reinterpret_cast<uint32*>(&hash[sizeof(uint32) * 4]);
 
     return checkSum;
 }

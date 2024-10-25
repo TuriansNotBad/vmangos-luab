@@ -21,18 +21,13 @@ set(EXECUTABLE_SRCS
   MaNGOSsoap.h
   Master.h
   RASocket.h
-  soapH.h
-  soapStub.h
   WorldRunnable.h
   CliRunnable.cpp
   Main.cpp
   MaNGOSsoap.cpp
   Master.cpp
   RASocket.cpp
-  soapC.cpp
-  soapServer.cpp
   WorldRunnable.cpp
-
 )
 
 
@@ -46,7 +41,6 @@ endif()
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/src/shared
-  ${CMAKE_SOURCE_DIR}/dep/include/gsoap
   ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
   ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_SOURCE_DIR}/src/framework/Network
@@ -176,5 +170,5 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mangosd.conf.dist.in ${CMAKE_CURRENT_
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mangosd.conf.dist DESTINATION ${CONF_DIR})
 
 if(WIN32 AND MSVC)
-  install(FILES ${CMAKE_SOURCE_DIR}/bin/Debug/${EXECUTABLE_NAME}.pdb DESTINATION ${BIN_DIR} CONFIGURATIONS Debug)
+  install(FILES $<TARGET_PDB_FILE:${EXECUTABLE_NAME}> DESTINATION ${BIN_DIR} OPTIONAL)
 endif()
