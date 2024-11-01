@@ -114,6 +114,7 @@ namespace LuaBindsAI {
 	int PartyInt_CmdTank(lua_State* L);
 	int PartyInt_CmdPull(lua_State* L);
 	int PartyInt_CmdScript(lua_State* L);
+	int PartyInt_CmdTrade(lua_State* L);
 
 	int PartyInt_GetData(lua_State* L);
 	int PartyInt_GetOwnerGuid(lua_State* L);
@@ -162,6 +163,7 @@ namespace LuaBindsAI {
 		{"CmdTank", PartyInt_CmdTank},
 		{"CmdPull", PartyInt_CmdPull},
 		{"CmdScript", PartyInt_CmdScript},
+		{"CmdTrade", PartyInt_CmdTrade},
 
 		{"GetData", PartyInt_GetData},
 		{"GetOwnerGuid", PartyInt_GetOwnerGuid},

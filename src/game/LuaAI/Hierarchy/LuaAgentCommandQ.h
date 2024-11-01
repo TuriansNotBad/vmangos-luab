@@ -17,6 +17,7 @@ enum class AgentCmdType : uint8
 	Buff,
 	Dispel,
 	Script,
+	Trade,
 	Max,
 };
 
@@ -166,6 +167,18 @@ class AgentCmdScript : public AgentCmd
 public:
 	AgentCmdScript() : AgentCmd(AgentCmdType::Script) {}
 	int Push(lua_State* L) override { return 0; }
+};
+
+
+class AgentCmdTrade : public AgentCmd
+{
+	ObjectGuid targetGuid;
+	lua_Integer bag, slot;
+
+public:
+	AgentCmdTrade(const ObjectGuid& targetGuid, lua_Integer bag, lua_Integer slot)
+		: AgentCmd(AgentCmdType::Trade), targetGuid(targetGuid), bag(bag), slot(slot) {}
+	int Push(lua_State* L) override;
 };
 
 

@@ -80,3 +80,11 @@ int AgentCmdDispel::Push(lua_State* L)
 	lua_pushstring(L, key.c_str());
 	return 2;
 }
+
+int AgentCmdTrade::Push(lua_State* L)
+{
+	LuaBindsAI::Guid_CreateUD(L, targetGuid);
+	lua_pushinteger(L, bag);
+	lua_pushinteger(L, slot);
+	return 3;
+}

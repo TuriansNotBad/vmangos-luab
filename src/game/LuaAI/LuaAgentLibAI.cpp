@@ -660,6 +660,19 @@ int LuaBindsAI::AI_EquipGetRandomProp(lua_State* L)
 }
 
 
+int LuaBindsAI::AI_EquipHasItemInSlot(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_Integer bag = luaL_checkinteger(L, 2);
+	lua_Integer slot = luaL_checkinteger(L, 3);
+	bool tradeCheck = luaL_checkboolean(L, 4);
+	if (bag < 0 || slot < 0)
+		luaL_error(L, "AI_EquipHasItemInSlot: bag and slot must be positive %lld %lld", bag, slot);
+	lua_pushboolean(L, ai->EquipHasItemInSlot(bag, slot, tradeCheck));
+	return 1;
+}
+
+
 int LuaBindsAI::AI_EquipPrint(lua_State* L)
 {
 	LuaAgent* ai = AI_GetAIObject(L);
@@ -962,6 +975,91 @@ int LuaBindsAI::AI_ChatSendWhisper(lua_State* L)
 		ai->ChatSendWhisper(recipient, text);
 
 	return 0;
+}
+
+
+// -----------------------------------------------------------
+//                       Trading
+// -----------------------------------------------------------
+
+
+int LuaBindsAI::AI_TradeIsInProgress(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_pushboolean(L, ai->GetPlayer()->GetTradeData() != nullptr);
+	return 1;
+}
+
+
+int LuaBindsAI::AI_TradeInitiate(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	ObjectGuid guid = Guid_GetGuidObject(L, 2)->guid;
+	ai->TradeInitiate(guid);
+	return 0;
+}
+
+
+int LuaBindsAI::AI_TradeAccept(lua_State* L)
+{
+	AI_GetAIObject(L)->TradeAccept();
+	return 0;
+}
+
+
+int LuaBindsAI::AI_TradeBegin(lua_State* L)
+{
+	AI_GetAIObject(L)->TradeBegin();
+	return 0;
+}
+
+
+int LuaBindsAI::AI_TradeCancel(lua_State* L)
+{
+	AI_GetAIObject(L)->TradeCancel();
+	return 0;
+}
+
+
+int LuaBindsAI::AI_TradeAddItem(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_Integer tradeSlot = luaL_checkinteger(L, 2);
+	lua_Integer bag = luaL_checkinteger(L, 3);
+	lua_Integer slot = luaL_checkinteger(L, 4);
+	if (tradeSlot < 0 || bag < 0 || slot < 0)
+		luaL_error(L, "AI_TradeAddItem: tradeSlot, bag, or slot was < 0 %lld, %lld, %lld", tradeSlot, bag, slot);
+	ai->TradeAddItem(tradeSlot, bag, slot);
+	return 0;
+}
+
+
+int LuaBindsAI::AI_TradeItemIsInTrade(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_Integer bag = luaL_checkinteger(L, 2);
+	lua_Integer slot = luaL_checkinteger(L, 3);
+	if (bag < 0 || slot < 0)
+		luaL_error(L, "AI_TradeItemIsInTrade: bag or slot was < 0 %lld, %lld", bag, slot);
+	if (!bag) bag = INVENTORY_SLOT_BAG_0;
+	Item* item = ai->GetPlayer()->GetItemByPos(bag, slot);
+	TradeData* data = ai->GetPlayer()->GetTradeData();
+	if (item && data)
+		lua_pushboolean(L, data->HasItem(item->GetObjectGuid()));
+	else
+		lua_pushboolean(L, false);
+	return 1;
+}
+
+
+int LuaBindsAI::AI_TradeIsAccepted(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	if (TradeData* data = ai->GetPlayer()->GetTradeData())
+		lua_pushboolean(L, data->IsAccepted());
+	else
+		lua_pushboolean(L, false);
+	return 1;
 }
 
 

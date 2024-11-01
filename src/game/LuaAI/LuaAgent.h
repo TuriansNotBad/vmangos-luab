@@ -147,6 +147,7 @@ public:
 	void EquipDestroyAll();
 	uint32 EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot);
 	int32 EquipGetRandomProp(EquipmentSlots itemSlot);
+	bool EquipHasItemInSlot(uint32 bag, uint32 slot, bool tradeCheck);
 	bool EquipItem(uint32 itemId, uint32 enchantId = 0u, int32 randomPropertyId = 0);
 	void EquipPrint();
 	void UpdateVisibilityForMaster();
@@ -204,6 +205,13 @@ public:
 	std::queue<std::string>& ChatGetMsgQ() { return m_chatMsgQ; }
 	void ChatSendInvToMaster(bool ignoreEquipped);
 
+	// trade
+
+	void TradeInitiate(ObjectGuid guid);
+	void TradeBegin();
+	void TradeAccept();
+	void TradeCancel();
+	void TradeAddItem(uint32 tradeSlot, uint32 bag, uint32 slot);
 
 };
 

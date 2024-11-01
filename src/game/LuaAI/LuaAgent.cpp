@@ -395,7 +395,7 @@ void LuaAgent::EquipDestroyAll()
 	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
 		me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
 
-	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; i++)
+	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
 			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
 
@@ -422,6 +422,15 @@ int32 LuaAgent::EquipGetRandomProp(EquipmentSlots itemSlot)
 {
 	Item* item = me->GetItemByPos(INVENTORY_SLOT_BAG_0, itemSlot);
 	return item ? item->GetItemRandomPropertyId() : 0;
+}
+
+
+bool LuaAgent::EquipHasItemInSlot(uint32 bag, uint32 slot, bool tradeCheck)
+{
+	if (!bag) bag = INVENTORY_SLOT_BAG_0;
+	if (!tradeCheck) return me->GetItemByPos(bag, slot) != nullptr;
+	if (Item* item = me->GetItemByPos(bag, slot)) return item->CanBeTraded();
+	return false;
 }
 
 
@@ -747,7 +756,7 @@ void LuaAgent::GonameCommand(std::string name) {
 
 
 // ========================================================================
-// Handlers
+// Chat
 // ========================================================================
 
 
@@ -794,28 +803,92 @@ void LuaAgent::ChatSendInvToMaster(bool ignoreEquipped)
 	Player* recipient = ObjectAccessor::FindPlayer(GetMasterGuid());
 	if (!recipient) return;
 
-	int n = 1;
-
 	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
 			if (!ignoreEquipped || !pItem->IsEquipped())
-				ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+				ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
 
-	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; i++)
+	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
 			if (!ignoreEquipped || !pItem->IsEquipped())
-				ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+				ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
 
 	for (uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+			ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
 
 	for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
 		if (Bag* pBag = (Bag*) me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
 			for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
 				if (Item* pItem = pBag->GetItemByPos(j))
 					if (!ignoreEquipped || !pItem->IsEquipped())
-						ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+						ChatSendWhisper(recipient, std::to_string(i) + " " + std::to_string(j) + ". " + pItem->GetProto()->Name1);
+}
+
+
+// ========================================================================
+// Trading
+// ========================================================================
+
+
+void LuaAgent::TradeInitiate(ObjectGuid guid)
+{
+	if (!me->GetTradeData())
+	{
+		std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_INITIATE_TRADE);
+		*send << guid;
+		me->GetSession()->QueuePacket(std::move(send));
+	}
+}
+
+
+void LuaAgent::TradeBegin()
+{
+	if (me->GetTradeData())
+	{
+		std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_BEGIN_TRADE);
+		me->GetSession()->QueuePacket(std::move(send));
+	}
+}
+
+
+void LuaAgent::TradeAccept()
+{
+	if (TradeData* data = me->GetTradeData())
+	{
+		if (!data->IsAccepted())
+		{
+			std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_ACCEPT_TRADE);
+			*send << uint32(1);
+			me->GetSession()->QueuePacket(std::move(send));
+		}
+	}
+}
+
+
+void LuaAgent::TradeCancel()
+{
+	if (TradeData* data = me->GetTradeData())
+	{
+		std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_CANCEL_TRADE);
+		me->GetSession()->QueuePacket(std::move(send));
+	}
+}
+
+
+void LuaAgent::TradeAddItem(uint32 tradeSlot, uint32 bag, uint32 slot)
+{
+	if (TradeData* data = me->GetTradeData())
+	{
+		if (!bag) bag = INVENTORY_SLOT_BAG_0;
+		Item* item = me->GetItemByPos(bag, slot);
+		if (!item || data->HasItem(item->GetObjectGuid()) || data->GetItem(TradeSlots(tradeSlot)) || !item->CanBeTraded()) return;
+		std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_SET_TRADE_ITEM);
+		*send << uint8(tradeSlot);
+		*send << uint8(bag);
+		*send << uint8(slot);
+		me->GetSession()->QueuePacket(std::move(send));
+	}
 }
 
 

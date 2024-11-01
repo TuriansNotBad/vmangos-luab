@@ -72,6 +72,7 @@ namespace LuaBindsAI {
 	int AI_EquipDestroyAll(lua_State* L);
 	int AI_EquipGetEnchantId(lua_State* L);
 	int AI_EquipGetRandomProp(lua_State* L);
+	int AI_EquipHasItemInSlot(lua_State* L);
 	int AI_EquipPrint(lua_State* L);
 	int AI_EquipSlotEmpty(lua_State* L);
 	int AI_EquipSlotItemId(lua_State* L);
@@ -118,6 +119,17 @@ namespace LuaBindsAI {
 	int AI_ChatPopNextWhisper(lua_State* L);
 	int AI_ChatSendInvToMaster(lua_State* L);
 	int AI_ChatSendWhisper(lua_State* L);
+
+	// trade
+
+	int AI_TradeIsInProgress(lua_State* L);
+	int AI_TradeInitiate(lua_State* L);
+	int AI_TradeAccept(lua_State* L);
+	int AI_TradeBegin(lua_State* L);
+	int AI_TradeCancel(lua_State* L);
+	int AI_TradeAddItem(lua_State* L);
+	int AI_TradeItemIsInTrade(lua_State* L);
+	int AI_TradeIsAccepted(lua_State* L);
 
 	static const struct luaL_Reg AI_BindLib[]{
 		{"HasReset", AI_HasReset},
@@ -175,6 +187,7 @@ namespace LuaBindsAI {
 		{"EquipDestroyAll", AI_EquipDestroyAll},
 		{"EquipGetEnchantId", AI_EquipGetEnchantId},
 		{"EquipGetRandomProp", AI_EquipGetRandomProp},
+		{"EquipHasItemInSlot", AI_EquipHasItemInSlot},
 		{"EquipPrint", AI_EquipPrint},
 		{"EquipSlotEmpty", AI_EquipSlotEmpty},
 		{"EquipSlotItemId", AI_EquipSlotItemId},
@@ -218,7 +231,17 @@ namespace LuaBindsAI {
 		{"ChatPopNextWhisper", AI_ChatPopNextWhisper},
 		{"ChatSendInvToMaster", AI_ChatSendInvToMaster},
 		{"ChatSendWhisper", AI_ChatSendWhisper},
-
+		
+		// trade
+		{"TradeIsInProgress", AI_TradeIsInProgress},
+		{"TradeInitiate", AI_TradeInitiate},
+		{"TradeAccept", AI_TradeAccept},
+		{"TradeBegin", AI_TradeBegin},
+		{"TradeCancel", AI_TradeCancel},
+		{"TradeAddItem", AI_TradeAddItem},
+		{"TradeItemIsInTrade", AI_TradeItemIsInTrade},
+		{"TradeIsAccepted", AI_TradeIsAccepted},
+		
 		{NULL, NULL}
 	};
 

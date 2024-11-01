@@ -513,6 +513,18 @@ int LuaBindsAI::PartyInt_CmdScript(lua_State* L)
 }
 
 
+int LuaBindsAI::PartyInt_CmdTrade(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L, 2);
+	LuaObjectGuid* guid = Guid_GetGuidObject(L, 3);
+	lua_Integer bag = luaL_checkinteger(L, 4);
+	lua_Integer slot = luaL_checkinteger(L, 5);
+	AgentCmdTrade* cmd = new AgentCmdTrade(guid->guid, bag, slot);
+	lua_pushinteger(L, ai->CommandsAdd(cmd));
+	return 1;
+}
+
+
 int LuaBindsAI::PartyInt_GetOwnerGuid(lua_State* L)
 {
 	PartyIntelligence* intelligence = PartyInt_GetPIObject(L);
