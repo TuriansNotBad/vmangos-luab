@@ -7,6 +7,7 @@
 #include "Goal/LogicManager.h"
 #include "Hierarchy/LuaAgentCommandQ.h"
 
+class Player;
 class PartyIntelligence;
 enum EnchantmentSlot;
 enum EquipmentSlots;
@@ -81,8 +82,13 @@ class LuaAgent
 	LogicManager m_logicManager;
 	std::vector<std::unique_ptr<AgentCmd>> commands;
 
+	int m_chatMaxQueueSz;
+	std::queue<std::string> m_chatMsgQ;
+
 	void Fall();
 	void FallEnd(float x, float y, float z);
+
+	void OnChatMessage(WorldPacket& pck);
 
 public:
 
@@ -191,6 +197,13 @@ public:
 	Player* GetPlayer() { return me; }
 	PartyIntelligence* GetPartyIntelligence() { return m_party; }
 	void SetPartyIntelligence(PartyIntelligence* party) { m_party = party; }
+
+	// chat
+
+	void ChatSendWhisper(Player* recipient, const std::string& text);
+	std::queue<std::string>& ChatGetMsgQ() { return m_chatMsgQ; }
+	void ChatSendInvToMaster(bool ignoreEquipped);
+
 
 };
 

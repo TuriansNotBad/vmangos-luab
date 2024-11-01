@@ -39,7 +39,10 @@ LuaAgent::LuaAgent(Player* me, ObjectGuid masterGuid, int logicID) :
 	m_desiredLevel(-1),
 
 	m_queueGoname(false),
-	m_queueGonameName("")
+	m_queueGonameName(""),
+
+	m_chatMsgQ(),
+	m_chatMaxQueueSz(10)
 {
 	m_updateTimer.Reset(2000);
 	m_updateSpeedTimer.Reset(m_updateSpeedInterval);
@@ -328,7 +331,15 @@ void LuaAgent::OnPacketReceived(const WorldPacket& pck)
 		std::unique_ptr<WorldPacket> send = std::make_unique<WorldPacket>(CMSG_PETITION_SIGN);
 		*send << itemGuid << uint8(0);
 		me->GetSession()->QueuePacket(std::move(send));
+		break;
 	}
+	case SMSG_MESSAGECHAT:
+		if (m_chatMaxQueueSz)
+		{
+			WorldPacket pck(pck);
+			OnChatMessage(pck);
+		}
+		break;
 	}
 }
 
@@ -732,6 +743,79 @@ void LuaAgent::GonameCommand(std::string name) {
 	char namecopy[128] = {};
 	strcpy(namecopy, name.c_str());
 	ChatHandler(me).HandleGonameCommand(namecopy);
+}
+
+
+// ========================================================================
+// Handlers
+// ========================================================================
+
+
+void LuaAgent::OnChatMessage(WorldPacket& pck)
+{
+	uint8 msgtype;
+	uint32 language;
+
+	pck >> msgtype >> language;
+
+	switch (msgtype)
+	{
+	case CHAT_MSG_WHISPER:
+		ObjectGuid senderGuid;
+		pck >> senderGuid;
+		if (senderGuid == GetMasterGuid())
+		{
+			uint32 msglen;
+			uint8 chatTag;
+			pck >> msglen;
+			char* msg = pck.ReadCString();
+			pck >> chatTag;
+
+			if (m_chatMsgQ.size() >= m_chatMaxQueueSz) m_chatMsgQ.pop();
+			m_chatMsgQ.push(msg);
+		}
+		break;
+	}
+
+}
+
+
+void LuaAgent::ChatSendWhisper(Player* recipient, const std::string& text)
+{
+	if (!recipient) return;
+	WorldPacket data;
+	ChatHandler::BuildChatPacket(data, CHAT_MSG_WHISPER, text.c_str(), Language::LANG_UNIVERSAL, 0, me->GetObjectGuid(), me->GetName());
+	recipient->GetSession()->SendPacket(&data);
+}
+
+
+void LuaAgent::ChatSendInvToMaster(bool ignoreEquipped)
+{
+	Player* recipient = ObjectAccessor::FindPlayer(GetMasterGuid());
+	if (!recipient) return;
+
+	int n = 1;
+
+	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			if (!ignoreEquipped || !pItem->IsEquipped())
+				ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+
+	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; i++)
+		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			if (!ignoreEquipped || !pItem->IsEquipped())
+				ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+
+	for (uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
+
+	for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+		if (Bag* pBag = (Bag*) me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+			for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
+				if (Item* pItem = pBag->GetItemByPos(j))
+					if (!ignoreEquipped || !pItem->IsEquipped())
+						ChatSendWhisper(recipient, std::to_string(n++) + ". " + pItem->GetProto()->Name1);
 }
 
 

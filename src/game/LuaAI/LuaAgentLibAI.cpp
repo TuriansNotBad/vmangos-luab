@@ -924,6 +924,48 @@ int LuaBindsAI::AI_GetSpellRank(lua_State* L)
 
 
 // -----------------------------------------------------------
+//                         Chat
+// -----------------------------------------------------------
+
+
+int LuaBindsAI::AI_ChatPopNextWhisper(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	std::queue<std::string>& queue = ai->ChatGetMsgQ();
+	if (queue.size())
+	{
+		lua_pushstring(L, queue.front().c_str());
+		queue.pop();
+	}
+	else
+		lua_pushnil(L);
+	return 1;
+}
+
+
+int LuaBindsAI::AI_ChatSendInvToMaster(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	bool ignoreEquipped = luaL_checkboolean(L, 2);
+	ai->ChatSendInvToMaster(ignoreEquipped);
+	return 0;
+}
+
+
+int LuaBindsAI::AI_ChatSendWhisper(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	ObjectGuid guid = Guid_GetGuidObject(L, 2)->guid;
+	const char* text = luaL_checkstring(L, 3);
+
+	if (Player* recipient = ObjectAccessor::FindPlayer(guid))
+		ai->ChatSendWhisper(recipient, text);
+
+	return 0;
+}
+
+
+// -----------------------------------------------------------
 //                      Internals
 // -----------------------------------------------------------
 

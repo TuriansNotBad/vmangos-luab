@@ -113,6 +113,12 @@ namespace LuaBindsAI {
 	int AI_GetSpellMaxRankForLevel(lua_State* L);
 	int AI_GetSpellMaxRankForMe(lua_State* L);
 
+	// chat
+
+	int AI_ChatPopNextWhisper(lua_State* L);
+	int AI_ChatSendInvToMaster(lua_State* L);
+	int AI_ChatSendWhisper(lua_State* L);
+
 	static const struct luaL_Reg AI_BindLib[]{
 		{"HasReset", AI_HasReset},
 
@@ -207,6 +213,11 @@ namespace LuaBindsAI {
 		{"GetSpellOfRank", AI_GetSpellOfRank},
 		{"GetSpellMaxRankForLevel", AI_GetSpellMaxRankForLevel},
 		{"GetSpellMaxRankForMe", AI_GetSpellMaxRankForMe},
+		
+		// chat
+		{"ChatPopNextWhisper", AI_ChatPopNextWhisper},
+		{"ChatSendInvToMaster", AI_ChatSendInvToMaster},
+		{"ChatSendWhisper", AI_ChatSendWhisper},
 
 		{NULL, NULL}
 	};
