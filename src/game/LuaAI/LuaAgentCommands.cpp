@@ -134,7 +134,9 @@ bool ChatHandler::HandleLuabRemoveAllCommand(char* args)
 
 bool ChatHandler::HandleLuabResetCommand(char* args)
 {
-	sLuaAgentMgr.LuaReload();
+	int32 nogear = 0;
+	ExtractInt32(&args, nogear);
+	sLuaAgentMgr.LuaReload(nogear == 1);
 	return true;
 }
 

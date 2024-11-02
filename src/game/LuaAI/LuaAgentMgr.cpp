@@ -83,7 +83,8 @@ LuaAgentMgr::LuaAgentMgr() :
 	m_bGroupAllInProgress(false),
 	m_bDisableAgentSaving(true),
 	m_dungeons(),
-	m_loadedFiles()
+	m_loadedFiles(),
+	m_bLuaReloadNoGear(false)
 {
 	m_updateTimer.Reset(0);
 	m_triggerRecordStorage = std::make_unique<LuaAI::TriggerRecordStorage>();
@@ -197,6 +198,8 @@ void LuaAgentMgr::Update(uint32 diff)
 			{
 				agent->Reset(true);
 				agent->SetCeaseUpdates(false);
+				if (m_bLuaReloadNoGear) agent->EquipSetShouldGenerate(false);
+				else agent->EquipSetHasGeneratedGear(false);
 			}
 		}
 
@@ -208,6 +211,7 @@ void LuaAgentMgr::Update(uint32 diff)
 
 		m_bLuaReload = false;
 		m_bLuaCeaseUpdates = false;
+		m_bLuaReloadNoGear = false;
 
 		sWorld.SendServerMessage(SERVER_MSG_CUSTOM, "Lua reload finished");
 	}

@@ -48,6 +48,7 @@ class LuaAgentMgr
 	bool m_bDisableAgentSaving;
 	bool m_bLuaCeaseUpdates;
 	bool m_bLuaReload;
+	bool m_bLuaReloadNoGear;
 	int m_updateInterval;
 	ShortTimeTracker m_updateTimer;
 
@@ -96,7 +97,7 @@ public:
 
 	lua_State* Lua() { return L; }
 
-	void LuaReload() { m_bLuaReload = true; }
+	void LuaReload(bool nogear = false) { m_bLuaReload = true; if (nogear) m_bLuaReloadNoGear = true; }
 	bool IsReloading() const { return m_bLuaReload; }
 	bool LuaDofile(const std::string& filename);
 	bool LuaIsFiledLoaded(const std::string& fname) { return m_loadedFiles.find(fname) != m_loadedFiles.end(); }

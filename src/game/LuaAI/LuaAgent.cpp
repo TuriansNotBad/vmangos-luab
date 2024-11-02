@@ -22,6 +22,8 @@ LuaAgent::LuaAgent(Player* me, ObjectGuid masterGuid, int logicID) :
 	m_bCmdQueueMode(false),
 	m_bHasReset(false),
 	m_bSimpleChaseMode(false),
+	m_bShouldGenGear(true),
+	m_bHasGeneratedGear(false),
 
 	m_userDataRef(LUA_NOREF),
 	m_userDataRefPlayer(LUA_NOREF),
@@ -390,10 +392,17 @@ bool LuaAgent::EquipCopyFromMaster()
 }
 
 
-void LuaAgent::EquipDestroyAll()
+void LuaAgent::EquipDestroyAll(bool equipped)
 {
 	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
 		me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+
+	if (equipped)
+	{
+		for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
+			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+		return;
+	}
 
 	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -803,15 +812,16 @@ void LuaAgent::ChatSendInvToMaster(bool ignoreEquipped)
 	Player* recipient = ObjectAccessor::FindPlayer(GetMasterGuid());
 	if (!recipient) return;
 
-	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
-		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			if (!ignoreEquipped || !pItem->IsEquipped())
-				ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
-
 	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			if (!ignoreEquipped || !pItem->IsEquipped())
-				ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
+		{
+			if (ignoreEquipped)
+			{
+				if (pItem->IsEquipped()) continue;
+				if (pItem->IsBag() && i >= INVENTORY_SLOT_BAG_START && i < INVENTORY_SLOT_BAG_END) continue;
+			}
+			ChatSendWhisper(recipient, "0 " + std::to_string(i) + ". " + pItem->GetProto()->Name1);
+		}
 
 	for (uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
 		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
@@ -821,8 +831,7 @@ void LuaAgent::ChatSendInvToMaster(bool ignoreEquipped)
 		if (Bag* pBag = (Bag*) me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
 			for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
 				if (Item* pItem = pBag->GetItemByPos(j))
-					if (!ignoreEquipped || !pItem->IsEquipped())
-						ChatSendWhisper(recipient, std::to_string(i) + " " + std::to_string(j) + ". " + pItem->GetProto()->Name1);
+					ChatSendWhisper(recipient, std::to_string(i) + " " + std::to_string(j) + ". " + pItem->GetProto()->Name1);
 }
 
 

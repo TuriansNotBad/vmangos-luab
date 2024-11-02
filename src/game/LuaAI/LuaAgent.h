@@ -72,6 +72,8 @@ class LuaAgent
 	bool m_bInitialized;
 	bool m_bHasReset;
 	bool m_bSimpleChaseMode;
+	bool m_bShouldGenGear;
+	bool m_bHasGeneratedGear;
 
 	int m_userDataRef;
 	int m_userDataRefPlayer;
@@ -144,7 +146,7 @@ public:
 	// equipment
 
 	bool EquipCopyFromMaster();
-	void EquipDestroyAll();
+	void EquipDestroyAll(bool equipped);
 	uint32 EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot);
 	int32 EquipGetRandomProp(EquipmentSlots itemSlot);
 	bool EquipHasItemInSlot(uint32 bag, uint32 slot, bool tradeCheck);
@@ -152,7 +154,11 @@ public:
 	void EquipPrint();
 	void UpdateVisibilityForMaster();
 	void SetAmmo(uint32 ammo) { m_ammo = ammo; }
-	uint32 GetAmmo() { return m_ammo; }
+	uint32 GetAmmo() const { return m_ammo; }
+	bool EquipShouldGenerate() { if (!m_bShouldGenGear) { m_bShouldGenGear = true; return false; } return true; }
+	void EquipSetShouldGenerate(bool v) { m_bShouldGenGear = v; }
+	void EquipSetHasGeneratedGear(bool v) { m_bHasGeneratedGear = v; }
+	bool EquipGetHasGeneratedGear() const { return m_bHasGeneratedGear; }
 
 	// commands
 

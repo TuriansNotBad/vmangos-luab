@@ -636,7 +636,9 @@ int LuaBindsAI::AI_EquipItem(lua_State* L)
 int LuaBindsAI::AI_EquipDestroyAll(lua_State* L)
 {
 	LuaAgent* ai = AI_GetAIObject(L);
-	ai->EquipDestroyAll();
+	bool equipped = false;
+	if (lua_gettop(L) > 1) equipped = luaL_checkboolean(L, 2);
+	ai->EquipDestroyAll(equipped);
 	return 0;
 }
 
@@ -660,6 +662,14 @@ int LuaBindsAI::AI_EquipGetRandomProp(lua_State* L)
 }
 
 
+int LuaBindsAI::AI_EquipHasGeneratedGear(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_pushboolean(L, ai->EquipGetHasGeneratedGear());
+	return 1;
+}
+
+
 int LuaBindsAI::AI_EquipHasItemInSlot(lua_State* L)
 {
 	LuaAgent* ai = AI_GetAIObject(L);
@@ -678,6 +688,22 @@ int LuaBindsAI::AI_EquipPrint(lua_State* L)
 	LuaAgent* ai = AI_GetAIObject(L);
 	ai->EquipPrint();
 	return 0;
+}
+
+
+int LuaBindsAI::AI_EquipSetHasGeneratedGear(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	ai->EquipSetHasGeneratedGear(luaL_checkboolean(L, 2));
+	return 0;
+}
+
+
+int LuaBindsAI::AI_EquipShouldGenerate(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L);
+	lua_pushboolean(L, ai->EquipShouldGenerate());
+	return 1;
 }
 
 
