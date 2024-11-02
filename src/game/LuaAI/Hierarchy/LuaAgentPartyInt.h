@@ -111,6 +111,7 @@ namespace LuaBindsAI {
 	int PartyInt_CmdEngage(lua_State* L);
 	int PartyInt_CmdFollow(lua_State* L);
 	int PartyInt_CmdHeal(lua_State* L);
+	int PartyInt_CmdLoot(lua_State* L);
 	int PartyInt_CmdTank(lua_State* L);
 	int PartyInt_CmdPull(lua_State* L);
 	int PartyInt_CmdScript(lua_State* L);
@@ -160,6 +161,7 @@ namespace LuaBindsAI {
 		{"CmdEngage", PartyInt_CmdEngage},
 		{"CmdFollow", PartyInt_CmdFollow},
 		{"CmdHeal", PartyInt_CmdHeal},
+		{"CmdLoot", PartyInt_CmdLoot},
 		{"CmdTank", PartyInt_CmdTank},
 		{"CmdPull", PartyInt_CmdPull},
 		{"CmdScript", PartyInt_CmdScript},

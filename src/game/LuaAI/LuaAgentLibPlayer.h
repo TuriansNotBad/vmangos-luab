@@ -24,6 +24,7 @@ namespace LuaBindsAI {
 
 	int Player_GetGroupMemberCount(lua_State* L);
 	int Player_IsInSameSubGroup(lua_State* L);
+	int Player_CanLootCorpse(lua_State* L);
 	int Player_GetLootMode(lua_State* L);
 	int Player_LootCorpse(lua_State* L);
 
@@ -59,6 +60,7 @@ namespace LuaBindsAI {
 		// group
 		{"GetGroupMemberCount", Player_GetGroupMemberCount},
 		{"IsInSameSubGroup", Player_IsInSameSubGroup},
+		{"CanLootCorpse", Player_CanLootCorpse},
 		{"GetLootMode", Player_GetLootMode},
 		{"LootCorpse", Player_LootCorpse},
 

@@ -44,6 +44,41 @@ namespace
 
 		return spellid;
 	}
+
+
+	inline bool Player_CanLootItemCheck(Player* me, Loot& loot, LootItem* item, QuestItem* qitem, QuestItem* ffaitem)
+	{
+		if (!item || !item->AllowedForPlayer(me, loot.GetLootTarget()) || item->is_looted) return false;
+		if (!qitem && item->is_blocked) return false;
+
+		if (me->GetLootGuid().IsCreature() && !item->is_underthreshold && !qitem && !ffaitem)
+			if (me->GetGroup() && me->GetGroup()->GetLootMethod() == MASTER_LOOT) return false;
+
+		ItemPosCountVec dest;
+		InventoryResult msg = me->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, item->itemid, item->count);
+		return msg == EQUIP_ERR_OK;
+	}
+
+
+	inline LootItem* Player_GetLootableItemInSlot(Player* me, int itemid, Loot& loot, int slot)
+	{
+		QuestItem* qitem = nullptr;
+		QuestItem* ffaitem = nullptr;
+		QuestItem* conditem = nullptr;
+		LootItem* item = loot.LootItemInSlot(slot, me->GetGUIDLow(), &qitem, &ffaitem, &conditem);
+		if (itemid <= 0 || item->itemid == itemid)
+			if (Player_CanLootItemCheck(me, loot, item, qitem, ffaitem))
+				return item;
+		return nullptr;
+	}
+
+
+	inline void Player_ReleaseLoot(Player* me, ObjectGuid guid)
+	{
+		WorldPacket p(CMSG_LOOT_RELEASE);
+		p << guid;
+		me->GetSession()->HandleLootReleaseOpcode(p);
+	}
 }
 
 
@@ -218,14 +253,48 @@ int LuaBindsAI::Player_GetLootMode(lua_State* L)
 }
 
 
-int LuaBindsAI::Player_LootCorpse(lua_State* L)
+int LuaBindsAI::Player_CanLootCorpse(lua_State* L)
 {
 	Player* me = Player_GetPlayerObject(L);
 	Unit* other = Unit_GetUnitObject(L, 2);
 	lua_Integer itemid = luaL_checkinteger(L, 3);
+
+	bool result = false;
+
 	if (other->IsCreature() && other->IsDead())
 	{
-		bool found = false;
+		Creature* c = static_cast<Creature*>(other);
+		if (c->GetLootRecipientGuid() == me->GetObjectGuid())
+		{
+			Loot& loot = c->loot;
+			result = loot.gold > 0;
+
+			if (!result)
+			{
+				for (uint8 itemSlot = 0; itemSlot < loot.items.size(); ++itemSlot)
+				{
+					if (Player_GetLootableItemInSlot(me, itemid, loot, itemSlot))
+					{
+						result = true;
+						break;
+					}
+				}
+			}
+		}
+	}
+	lua_pushboolean(L, result);
+	return 1;
+}
+
+
+int LuaBindsAI::Player_LootCorpse(lua_State* L)
+{
+	Player* me = Player_GetPlayerObject(L);
+	Unit* other = Unit_GetUnitObject(L, 2);
+	lua_Integer itemid = luaL_checkinteger(L, 3); // loot all items if <= 0
+	if (other->IsCreature() && other->IsDead())
+	{
+		lua_Integer found = 0;
 		Creature* c = static_cast<Creature*>(other);
 		if (c->GetLootRecipientGuid() == me->GetObjectGuid())
 		{
@@ -239,30 +308,34 @@ int LuaBindsAI::Player_LootCorpse(lua_State* L)
 					sLog.Out(LOG_BASIC, LOG_LVL_DEBUG, "Player_GetLootList: missing item prototype for item with id: %d", lootItem.itemid);
 					continue;
 				}
-				if (lootItem.itemid == itemid && !lootItem.is_looted)
+				if ((itemid <= 0 || lootItem.itemid == itemid) && !lootItem.is_looted)
 				{
 					me->SendLoot(c->GetObjectGuid(), LootType::LOOT_CORPSE);
-					if (loot.gold)
+					if (me->GetLootGuid() == c->GetObjectGuid())
 					{
-						WorldPacket p(CMSG_LOOT_MONEY);
-						me->GetSession()->HandleLootMoneyOpcode(p);
+						if (!found) found = 1;
+						if (loot.gold)
+						{
+							WorldPacket p(CMSG_LOOT_MONEY);
+							me->GetSession()->HandleLootMoneyOpcode(p);
+						}
+						{
+							WorldPacket p(CMSG_AUTOSTORE_LOOT_ITEM);
+							p << itemSlot;
+							me->GetSession()->HandleAutostoreLootItemOpcode(p);
+						}
 					}
+					Player_ReleaseLoot(me, c->GetObjectGuid());
+					// if only a specific item was requested we're done
+					if (itemid > 0)
 					{
-						WorldPacket p(CMSG_AUTOSTORE_LOOT_ITEM);
-						p << itemSlot;
-						me->GetSession()->HandleAutostoreLootItemOpcode(p);
+						lua_pushinteger(L, found);
+						return 1;
 					}
-					{
-						WorldPacket p(CMSG_LOOT_RELEASE);
-						p << c->GetObjectGuid();
-						me->GetSession()->HandleLootReleaseOpcode(p);
-					}
-					lua_pushinteger(L, 1);
-					return 1;
 				}
 			}
-			// item not found
-			lua_pushinteger(L, 0);
+			// done looting, send if found
+			lua_pushinteger(L, found);
 			return 1;
 		}
 		// not our loot

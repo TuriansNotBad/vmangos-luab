@@ -483,6 +483,17 @@ int LuaBindsAI::PartyInt_CmdHeal(lua_State* L)
 }
 
 
+int LuaBindsAI::PartyInt_CmdLoot(lua_State* L)
+{
+	LuaAgent* ai = AI_GetAIObject(L, 2);
+	LuaObjectGuid* guid = Guid_GetGuidObject(L, 3);
+	lua_Integer itemId = luaL_checkinteger(L, 4);
+	AgentCmdLoot* cmd = new AgentCmdLoot(guid->guid, itemId);
+	lua_pushinteger(L, ai->CommandsAdd(cmd));
+	return 1;
+}
+
+
 int LuaBindsAI::PartyInt_CmdTank(lua_State* L)
 {
 	LuaAgent* ai = AI_GetAIObject(L, 2);

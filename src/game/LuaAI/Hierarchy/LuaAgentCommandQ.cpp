@@ -88,3 +88,10 @@ int AgentCmdTrade::Push(lua_State* L)
 	lua_pushinteger(L, slot);
 	return 3;
 }
+
+int AgentCmdLoot::Push(lua_State* L)
+{
+	LuaBindsAI::Guid_CreateUD(L, targetGuid);
+	lua_pushinteger(L, itemId);
+	return 2;
+}
