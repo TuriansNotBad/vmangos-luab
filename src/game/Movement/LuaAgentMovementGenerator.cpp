@@ -328,6 +328,29 @@ namespace
         }
     }
 
+    void Path_CutPathWithDynamicLoS(PathInfo& path, Unit* unit)
+    {
+        if (path.getPathType() & PathType::PATHFIND_NOPATH)
+            return;
+
+        Movement::PointsArray& points = const_cast<Movement::PointsArray&>(path.getPath());
+        uint32 maxIndex = points.size() - 1;
+        Vector3 out;
+        // We have always keep at least 2 points (else, there is no mvt !)
+        for (uint32 i = 1; i <= maxIndex; ++i)
+        {
+            Vector3 a(points[i-1]);
+            a.z += 1.f;
+            Vector3 b(points[i]);
+            b.z += 1.f;
+            if (unit->GetMap()->GetDynamicObjectHitPos(a, b, out, -0.1f))
+            {
+                points[i] = out;
+                points.resize(i + 1);
+                break;
+            }
+        }
+    }
 }
 
 //-----------------------------------------------//
@@ -417,11 +440,16 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
             
             if (GetMovementGeneratorType() == CHASE_MOTION_TYPE)
             {
+                bool bSimpleChase = false;
+                if (Player* pOwner = owner.ToPlayer())
+                    if (LuaAgent* agent = pOwner->GetLuaAI())
+                        bSimpleChase = agent->IsSimpleChaseMode();
+
                 float angle;
-                if (m_bUseAngle)
+                if (m_bUseAngle && !bSimpleChase)
                 {
                     angle = m_bUseAbsAngle ? m_fAbsAngle : i_target->GetOrientation();
-                    if (!m_bUseAbsAngle && i_target->GetVictim() && i_target->GetVictim()->GetObjectGuid() != owner.GetObjectGuid())
+                    if (!m_bUseAbsAngle && (!i_target->GetVictim() || i_target->GetVictim()->GetObjectGuid() != owner.GetObjectGuid()))
                         angle += m_fAngle;
                 }
                 else
@@ -490,7 +518,7 @@ void LuaAITargetedMovementGeneratorMedium<T, D>::_setTargetLocation(T &owner)
             return;
 
         // prevent pets from going through closed doors
-        path.CutPathWithDynamicLoS();
+        Path_CutPathWithDynamicLoS(path, &owner);
         if (path.getPath().size() == 2 && path.Length() < 0.1f)
         {
             m_bReachable = false;
