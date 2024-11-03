@@ -43,6 +43,7 @@ namespace LuaBindsAI {
 	int Unit_IsInPositionToCast(lua_State* L);
 	int Unit_IsInLOS(lua_State* L);
 	int Unit_IsSpellReady(lua_State* L);
+	int Unit_IsTargetableByHeal(lua_State* L);
 	int Unit_GetTotemEntry(lua_State* L);
 	int Unit_GetTotems(lua_State* L);
 	int Unit_GetGuardians(lua_State* L);
@@ -178,6 +179,7 @@ namespace LuaBindsAI {
 		{"IsInPositionToCast", Unit_IsInPositionToCast},
 		{"IsInLOS", Unit_IsInLOS},
 		{"IsSpellReady", Unit_IsSpellReady},
+		{"IsTargetableByHeal", Unit_IsTargetableByHeal},
 		{"GetTotemEntry", Unit_GetTotemEntry},
 		{"GetTotems", Unit_GetTotems},
 		{"GetGuardians", Unit_GetGuardians},

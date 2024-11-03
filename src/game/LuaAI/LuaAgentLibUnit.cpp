@@ -419,6 +419,14 @@ int LuaBindsAI::Unit_IsSpellReady(lua_State* L)
 }
 
 
+int LuaBindsAI::Unit_IsTargetableByHeal(lua_State* L)
+{
+	Unit* unit = Unit_GetUnitObject(L);
+	lua_pushboolean(L, !(unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE_2) || unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PLAYER)));
+	return 1;
+}
+
+
 int LuaBindsAI::Unit_GetTotemEntry(lua_State* L)
 {
 	Unit* unit = Unit_GetUnitObject(L);
