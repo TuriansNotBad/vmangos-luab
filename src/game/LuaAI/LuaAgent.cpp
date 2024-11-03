@@ -22,8 +22,6 @@ LuaAgent::LuaAgent(Player* me, ObjectGuid masterGuid, int logicID) :
 	m_bCmdQueueMode(false),
 	m_bHasReset(false),
 	m_bSimpleChaseMode(false),
-	m_bShouldGenGear(true),
-	m_bHasGeneratedGear(false),
 
 	m_userDataRef(LUA_NOREF),
 	m_userDataRefPlayer(LUA_NOREF),
@@ -49,6 +47,10 @@ LuaAgent::LuaAgent(Player* me, ObjectGuid masterGuid, int logicID) :
 	m_updateTimer.Reset(2000);
 	m_updateSpeedTimer.Reset(m_updateSpeedInterval);
 	m_topGoal.SetTerminated(true);
+	if (me)
+	{
+		EquipDestroyAll(true, true);
+	}
 }
 
 
@@ -92,9 +94,8 @@ void LuaAgent::Update(uint32 diff)
 	if (GetDesiredLevel() != -1 && !me->IsInCombat() && me->GetLevel() != GetDesiredLevel())
 	{
 		me->GiveLevel(GetDesiredLevel());
-		me->InitTalentForLevel();
 		me->SetUInt32Value(PLAYER_XP, 0);
-		Reset(false);
+		Reset(false, false);
 		return;
 	}
 
@@ -138,12 +139,12 @@ void LuaAgent::Update(uint32 diff)
 	// a manager called error state
 	if (GetCeaseUpdates()) {
 		m_goalManager = GoalManager();
-		Reset(false);
+		Reset(false, false);
 	}
 }
 
 
-void LuaAgent::Reset(bool dropRefs)
+void LuaAgent::Reset(bool dropRefs, bool destroyGear)
 {
 	SetHealTarget(ObjectGuid());
 	SetCCTarget(ObjectGuid());
@@ -203,6 +204,7 @@ void LuaAgent::Reset(bool dropRefs)
 	SetHealTarget(ObjectGuid());
 	SetCCTarget(ObjectGuid());
 	SetAmmo(0u);
+	if (destroyGear) EquipDestroyAll(true, true);
 	m_updateTimer.Reset(500);
 }
 
@@ -392,31 +394,26 @@ bool LuaAgent::EquipCopyFromMaster()
 }
 
 
-void LuaAgent::EquipDestroyAll(bool equipped)
+void LuaAgent::EquipDestroyAll(bool equipped, bool unequipped)
 {
-	for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
-		me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
-
 	if (equipped)
+		for (int i = EQUIPMENT_SLOT_START; i < EQUIPMENT_SLOT_END; ++i)
+			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+
+	if (unequipped)
 	{
+		// destroy bag contents first so anticheat doesn't complain
 		for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
-		return;
-	}
-
-	for (uint8 i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
-		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
-
-	for (uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
-		if (Item* pItem = me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
-
-	for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
-		if (Bag* pBag = (Bag*) me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
-			for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
-				if (Item* pItem = pBag->GetItemByPos(j))
+			if (Bag* pBag = (Bag*) me->GetItemByPos(INVENTORY_SLOT_BAG_0, i))
+				for (uint32 j = 0; j < pBag->GetBagSize(); ++j)
 					me->DestroyItem(i, j, true);
+
+		for (uint8 i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_ITEM_END; ++i)
+			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+
+		for (uint8 i = KEYRING_SLOT_START; i < KEYRING_SLOT_END; ++i)
+			me->DestroyItem(INVENTORY_SLOT_BAG_0, i, true);
+	}
 }
 
 

@@ -196,10 +196,8 @@ void LuaAgentMgr::Update(uint32 diff)
 			// reset all
 			if (LuaAgent* agent = it.second->GetLuaAI())
 			{
-				agent->Reset(true);
+				agent->Reset(true, !m_bLuaReloadNoGear);
 				agent->SetCeaseUpdates(false);
-				if (m_bLuaReloadNoGear) agent->EquipSetShouldGenerate(false);
-				else agent->EquipSetHasGeneratedGear(false);
 			}
 		}
 
@@ -512,7 +510,7 @@ void LuaAgentMgr::ResetAgents()
 {
 	for (auto& itr : m_agents)
 		if (LuaAgent* agent = itr.second->GetLuaAI())
-			agent->Reset(false);
+			agent->Reset(false, false);
 }
 
 void LuaAgentMgr::ReviveAll(Player* owner, float hp, bool sickness)

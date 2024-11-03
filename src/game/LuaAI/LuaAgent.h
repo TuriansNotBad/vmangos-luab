@@ -72,8 +72,6 @@ class LuaAgent
 	bool m_bInitialized;
 	bool m_bHasReset;
 	bool m_bSimpleChaseMode;
-	bool m_bShouldGenGear;
-	bool m_bHasGeneratedGear;
 
 	int m_userDataRef;
 	int m_userDataRefPlayer;
@@ -102,7 +100,7 @@ public:
 	void Init();
 	void Update(uint32 diff);
 	void UpdateSession(uint32 diff);
-	void Reset(bool droprefs);
+	void Reset(bool droprefs, bool destroyGear);
 
 	void OnLoggedIn();
 	void OnPacketReceived(const WorldPacket& pck);
@@ -146,7 +144,7 @@ public:
 	// equipment
 
 	bool EquipCopyFromMaster();
-	void EquipDestroyAll(bool equipped);
+	void EquipDestroyAll(bool equipped, bool unequipped);
 	uint32 EquipGetEnchantId(EnchantmentSlot slot, EquipmentSlots itemSlot);
 	int32 EquipGetRandomProp(EquipmentSlots itemSlot);
 	bool EquipHasItemInSlot(uint32 bag, uint32 slot, bool tradeCheck);
@@ -155,10 +153,6 @@ public:
 	void UpdateVisibilityForMaster();
 	void SetAmmo(uint32 ammo) { m_ammo = ammo; }
 	uint32 GetAmmo() const { return m_ammo; }
-	bool EquipShouldGenerate() { if (!m_bShouldGenGear) { m_bShouldGenGear = true; return false; } return true; }
-	void EquipSetShouldGenerate(bool v) { m_bShouldGenGear = v; }
-	void EquipSetHasGeneratedGear(bool v) { m_bHasGeneratedGear = v; }
-	bool EquipGetHasGeneratedGear() const { return m_bHasGeneratedGear; }
 
 	// commands
 

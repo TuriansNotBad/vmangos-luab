@@ -72,11 +72,8 @@ namespace LuaBindsAI {
 	int AI_EquipDestroyAll(lua_State* L);
 	int AI_EquipGetEnchantId(lua_State* L);
 	int AI_EquipGetRandomProp(lua_State* L);
-	int AI_EquipHasGeneratedGear(lua_State* L);
 	int AI_EquipHasItemInSlot(lua_State* L);
 	int AI_EquipPrint(lua_State* L);
-	int AI_EquipSetHasGeneratedGear(lua_State* L);
-	int AI_EquipShouldGenerate(lua_State* L);
 	int AI_EquipSlotEmpty(lua_State* L);
 	int AI_EquipSlotItemId(lua_State* L);
 	int AI_UpdateVisibilityForMaster(lua_State* L);
@@ -190,11 +187,8 @@ namespace LuaBindsAI {
 		{"EquipDestroyAll", AI_EquipDestroyAll},
 		{"EquipGetEnchantId", AI_EquipGetEnchantId},
 		{"EquipGetRandomProp", AI_EquipGetRandomProp},
-		{"EquipHasGeneratedGear", AI_EquipHasGeneratedGear},
 		{"EquipHasItemInSlot", AI_EquipHasItemInSlot},
 		{"EquipPrint", AI_EquipPrint},
-		{"EquipSetHasGeneratedGear", AI_EquipSetHasGeneratedGear},
-		{"EquipShouldGenerate", AI_EquipShouldGenerate},
 		{"EquipSlotEmpty", AI_EquipSlotEmpty},
 		{"EquipSlotItemId", AI_EquipSlotItemId},
 		{"UpdateVisibilityForMaster", AI_UpdateVisibilityForMaster},
