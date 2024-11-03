@@ -345,6 +345,7 @@ namespace
             b.z += 1.f;
             if (unit->GetMap()->GetDynamicObjectHitPos(a, b, out, -0.1f))
             {
+                out.z -= 1.f;
                 points[i] = out;
                 points.resize(i + 1);
                 break;
