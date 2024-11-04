@@ -299,6 +299,12 @@ int LuaBindsAI::Player_LootCorpse(lua_State* L)
 		if (c->GetLootRecipientGuid() == me->GetObjectGuid())
 		{
 			Loot& loot = c->loot;
+			me->SendLoot(c->GetObjectGuid(), LootType::LOOT_CORPSE);
+			if (loot.gold)
+			{
+				WorldPacket p(CMSG_LOOT_MONEY);
+				me->GetSession()->HandleLootMoneyOpcode(p);
+			}
 			for (uint8 itemSlot = 0; itemSlot < loot.items.size(); ++itemSlot)
 			{
 				LootItem& lootItem = loot.items[itemSlot];
@@ -310,30 +316,25 @@ int LuaBindsAI::Player_LootCorpse(lua_State* L)
 				}
 				if ((itemid <= 0 || lootItem.itemid == itemid) && !lootItem.is_looted)
 				{
-					me->SendLoot(c->GetObjectGuid(), LootType::LOOT_CORPSE);
 					if (me->GetLootGuid() == c->GetObjectGuid())
 					{
 						if (!found) found = 1;
-						if (loot.gold)
-						{
-							WorldPacket p(CMSG_LOOT_MONEY);
-							me->GetSession()->HandleLootMoneyOpcode(p);
-						}
 						{
 							WorldPacket p(CMSG_AUTOSTORE_LOOT_ITEM);
 							p << itemSlot;
 							me->GetSession()->HandleAutostoreLootItemOpcode(p);
 						}
 					}
-					Player_ReleaseLoot(me, c->GetObjectGuid());
 					// if only a specific item was requested we're done
 					if (itemid > 0)
 					{
+						Player_ReleaseLoot(me, c->GetObjectGuid());
 						lua_pushinteger(L, found);
 						return 1;
 					}
 				}
 			}
+			Player_ReleaseLoot(me, c->GetObjectGuid());
 			// done looting, send if found
 			lua_pushinteger(L, found);
 			return 1;
