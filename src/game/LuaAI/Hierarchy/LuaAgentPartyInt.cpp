@@ -268,9 +268,9 @@ float PartyIntelligence::GetAngleForTank(LuaAgent* ai, Unit* target, bool& flipp
 	G3D::Vector3 result;
 	G3D::Vector3 from(agent->GetPositionX(), agent->GetPositionY(), agent->GetPositionZ());
 
-	CLine& line = m_dungeon->lines[m_dungeon->ClosestP(from, result, resultD, resultS, resultpct)];
+	const CLine& line = m_dungeon->lines[m_dungeon->ClosestP(from, result, resultD, resultS, resultpct)];
 
-	G3D::Vector3& AB = line.pts[resultS + 1].pos - line.pts[resultS].pos;
+	G3D::Vector3 AB = line.pts[resultS + 1].pos - line.pts[resultS].pos;
 
 	float a = std::atan2(AB.y, AB.x);
 	a = (a >= 0.f) ? a : (2.f * M_PI_F + a); // 0 .. 360
@@ -281,7 +281,7 @@ float PartyIntelligence::GetAngleForTank(LuaAgent* ai, Unit* target, bool& flipp
 		{
 			G3D::Vector3 ownerPos(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ());
 			G3D::Vector3 targetPos(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
-			G3D::Vector3& ownerToTarget = targetPos - ownerPos;
+			G3D::Vector3 ownerToTarget = targetPos - ownerPos;
 			// flip direction if owner is opposite side
 			if (AB.dot(ownerToTarget) < 0.f)
 				shouldFlip = true;
@@ -697,11 +697,11 @@ int LuaBindsAI::PartyInt_GetNextCLineS(lua_State* L)
 	if (cline->lines[lineIdx].pts.size() <= S || S < 0)
 		luaL_error(L, "PartyInt_GetNextCLineS: idx check fail, cline %d only has %d pts, got %d", lineIdx, cline->lines[lineIdx].pts.size(), S);
 
-	G3D::Vector3* P; // = &cline->lines[lineIdx].pts[0].pos;
+	const G3D::Vector3* P; // = &cline->lines[lineIdx].pts[0].pos;
 	//if (S == 0 && lineIdx == 0);
 	//else
 	{
-		CLine& line = cline->lines[lineIdx];
+		const CLine& line = cline->lines[lineIdx];
 		//if (S == 0)
 		//{
 		//	--lineIdx;
@@ -772,7 +772,7 @@ int LuaBindsAI::PartyInt_ShouldReverseCLine(lua_State* L)
 		G3D::Vector3 result;
 		G3D::Vector3 from(unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ());
 		lineIdx = cline->ClosestP(from, result, resultD, resultS, resultpct);
-		CLine& line = cline->lines[lineIdx];
+		CLine* line = &cline->lines[lineIdx];
 
 		// If we're on the same line check if target's segment is further than my segment;
 		{
@@ -786,16 +786,16 @@ int LuaBindsAI::PartyInt_ShouldReverseCLine(lua_State* L)
 			}
 			if (useTargetLine)
 			{
-				line = cline->lines[targetLineIdx];
+				line = &cline->lines[targetLineIdx];
 				resultS = targetSegment;
 			}
 		}
 
-		G3D::Vector3& AB = line.pts[resultS + 1].pos - line.pts[resultS].pos;
+		G3D::Vector3 AB = line->pts[resultS + 1].pos - line->pts[resultS].pos;
 
 		G3D::Vector3 ownerPos(owner->GetPositionX(), owner->GetPositionY(), owner->GetPositionZ());
 		G3D::Vector3 targetPos(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
-		G3D::Vector3& ownerToTarget = targetPos - ownerPos;
+		G3D::Vector3 ownerToTarget = targetPos - ownerPos;
 		// flip direction if owner is opposite side
 		if (AB.dot(ownerToTarget) < 0.f)
 		{
