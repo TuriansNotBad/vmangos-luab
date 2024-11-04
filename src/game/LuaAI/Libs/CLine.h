@@ -16,14 +16,14 @@ struct CLinePoint
 	CLinePoint() : pos(), minz(0.f), helper(), R(2.f) {}
 	CLinePoint(G3D::Vector3 pos, float minz, const ObjectGuid& helper) : pos(pos), minz(minz), helper(helper), R(2.f) {}
 
-	void Move(G3D::Vector3& newpos, Player* gm, uint32 helperId)
+	void Move(G3D::Vector3 newpos, Player* gm, uint32 helperId)
 	{
 		if (Creature* go = gm->GetMap()->GetCreature(helper))
 		{
 			helper = ObjectGuid();
 			go->Kill(go, nullptr, false);
 		}
-		pos = std::move(newpos);
+		pos = newpos;
 		SummonHelper(gm, helperId);
 	}
 
@@ -51,12 +51,12 @@ struct CLine
 	int mapId{-1};
 	std::vector<CLinePoint> pts{};
 
-	void Point(G3D::Vector3& point, const ObjectGuid& helper)
+	void Point(const G3D::Vector3& point, const ObjectGuid& helper)
 	{
 		pts.emplace_back(point, -1000.f, helper);
 	}
 
-	bool GetPointInLosAtD(Unit* me, Unit* target, Unit* losTarget, G3D::Vector3& result, int S, float minD, float maxD, float step, float pctStart, bool reverse)
+	bool GetPointInLosAtD(Unit* me, Unit* target, Unit* losTarget, G3D::Vector3& result, int S, float minD, float maxD, float step, float pctStart, bool reverse) const
 	{
 		float ltx = losTarget->GetPositionX(), lty = losTarget->GetPositionY(), ltz = losTarget->GetPositionZ();
 		G3D::Vector3 resultPoint(result);
@@ -111,8 +111,8 @@ struct CLine
 
 			const G3D::Vector3& A = pts[S].pos;
 			const G3D::Vector3& B = pts[S + inc].pos;
-			G3D::Vector3& AB = B - A;
-			resultPoint = std::move(G3D::Vector3(A.x + AB.x * pct, A.y + AB.y * pct, A.z + AB.z * pct));
+			G3D::Vector3 AB = B - A;
+			resultPoint = G3D::Vector3(A.x + AB.x * pct, A.y + AB.y * pct, A.z + AB.z * pct);
 
 			// get next point
 			pct += pctStep;
@@ -131,10 +131,10 @@ struct CLine
 		return false;
 	}
 
-	G3D::Vector3 ClosestSegP(const G3D::Vector3& from, const G3D::Vector3& A, const G3D::Vector3& B, float& pct)
+	G3D::Vector3 ClosestSegP(const G3D::Vector3& from, const G3D::Vector3& A, const G3D::Vector3& B, float& pct) const
 	{
-		G3D::Vector3& Afrom = from - A;
-		G3D::Vector3& AB = B - A;
+		G3D::Vector3 Afrom = from - A;
+		G3D::Vector3 AB = B - A;
 		float ndot = Afrom.dot(AB) / AB.squaredMagnitude();
 		// bind ndot to segment AB
 		if (ndot <= 0.f)
@@ -151,12 +151,12 @@ struct CLine
 		return G3D::Vector3(A.x + AB.x * ndot, A.y + AB.y * ndot, A.z + AB.z * ndot);
 	}
 
-	float D2(const G3D::Vector3& A, const G3D::Vector3& B)
+	float D2(const G3D::Vector3& A, const G3D::Vector3& B) const
 	{
 		return (B - A).squaredMagnitude();
 	}
 
-	void ClosestP(const G3D::Vector3& from, G3D::Vector3& resultPoint, float& resultDistance, int& resultSegment, float& pct)
+	void ClosestP(const G3D::Vector3& from, G3D::Vector3& resultPoint, float& resultDistance, int& resultSegment, float& pct) const
 	{
 		assert(pts.size() > 1);
 		if (pts.size() == 2)
@@ -173,9 +173,9 @@ struct CLine
 
 		for (size_t i = 1; i < pts.size(); ++i)
 		{
-			G3D::Vector3& A = pts[i - 1].pos;
-			G3D::Vector3& B = pts[i].pos;
-			G3D::Vector3& C = ClosestSegP(from, A, B, percent);
+			const G3D::Vector3& A = pts[i - 1].pos;
+			const G3D::Vector3& B = pts[i].pos;
+			const G3D::Vector3 C = ClosestSegP(from, A, B, percent);
 
 			if (C == nearestP)
 				continue;
@@ -190,7 +190,7 @@ struct CLine
 			}
 		}
 
-		resultPoint = std::move(nearestP);
+		resultPoint = nearestP;
 		resultDistance = nearestD;
 		resultSegment = nearestS;
 	}
@@ -223,14 +223,14 @@ struct CLine
 		sLog.Out(LOG_BASIC, LOG_LVL_ERROR, "CLine::DelSeg: guid not found %llu", guid.GetRawValue());
 	}
 
-	void Write(const std::string& name)
+	void Write(const std::string& name) const
 	{
 		std::ofstream out(name, std::ofstream::trunc);
 		Write(out);
 		out.close();
 	}
 
-	void Write(std::ofstream& out)
+	void Write(std::ofstream& out) const
 	{
 		if (!pts.size())
 		{
@@ -247,14 +247,14 @@ struct CLine
 		}
 	}
 
-	void WriteAsTable(const std::string& name)
+	void WriteAsTable(const std::string& name) const
 	{
 		std::ofstream out(name, std::ofstream::trunc);
 		WriteAsTable(out);
 		out.close();
 	}
 
-	void WriteAsTable(std::ofstream& out, const std::string& prefix = "\t\t")
+	void WriteAsTable(std::ofstream& out, const std::string& prefix = "\t\t") const
 	{
 		if (!pts.size())
 		{
@@ -292,8 +292,7 @@ struct DungeonData
 		int S;
 		int closestLine = ClosestP(from, result, D, S, pct);
 		if (lineIdx > 0 && closestLine != lineIdx) return false;
-		CLine& line = lines[closestLine];
-		return line.GetPointInLosAtD(me, target, losTarget, result, S, minD, maxD, step, pct, reverse);
+		return lines[closestLine].GetPointInLosAtD(me, target, losTarget, result, S, minD, maxD, step, pct, reverse);
 	}
 
 	int ClosestP(const G3D::Vector3& from, G3D::Vector3& resultPoint, float& resultDistance, int& resultSegment, float& pct)
@@ -305,10 +304,10 @@ struct DungeonData
 		int nearestS = 0;
 		int nearestL = 0;
 
+		G3D::Vector3 P;
 		for (int i = 0; i < lines.size(); ++i)
 		{
-			auto& line = lines[i];
-			G3D::Vector3 P;
+			const CLine& line = lines[i];
 			float D2, percent;
 			int S;
 			line.ClosestP(from, P, D2, S, percent);
@@ -321,8 +320,8 @@ struct DungeonData
 				pct = percent;
 			}
 		}
-
-		resultPoint = std::move(nearestP);
+		
+		resultPoint = nearestP;
 		resultDistance = sqrt(nearestD);
 		resultSegment = nearestS;
 		return nearestL;
