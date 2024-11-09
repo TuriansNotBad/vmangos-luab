@@ -121,8 +121,8 @@ void LuaAgent::Update(uint32 diff)
 	if ((me->GetSpeedRate(UnitMoveType::MOVE_RUN) < 0.99f && !me->HasAuraType(AuraType::SPELL_AURA_MOD_DECREASE_SPEED)) || m_updateSpeedTimer.Passed())
 	{
 		m_updateSpeedTimer.Reset(m_updateSpeedInterval);
-		me->UpdateSpeed(UnitMoveType::MOVE_RUN, false);
-		me->UpdateSpeed(UnitMoveType::MOVE_SWIM, false);
+		me->UpdateSpeed(UnitMoveType::MOVE_RUN, true);
+		me->UpdateSpeed(UnitMoveType::MOVE_SWIM, true);
 	}
 
 	lua_State* L = sLuaAgentMgr.Lua();
